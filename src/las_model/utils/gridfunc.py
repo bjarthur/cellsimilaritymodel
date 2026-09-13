@@ -469,16 +469,19 @@ class Grid:
         # build 1D matrix of all molecule concentrations at frame
         concs = molFrame[np.nonzero(molFrame)]
         
+        # center concentrations
+        concs = concs - np.mean(concs)
+
         # calculate numerator value 
         numsum = 0
         for i in range(len(concs)):
             for j in range(len(concs)):
-                numsum += w[i,j] * (concs[i]-np.mean(concs)) * (concs[j]-np.mean(concs))
+                numsum += w[i,j] * concs[i] * concs[j]
         
         # calculate denominator 
         densum = 0
         for i in range(len(concs)):
-            densum += (concs[i]-np.mean(concs))**2
+            densum += concs[i]**2
         
         # print('number of cells: %i' % N)
         # print('weight matrix sum: %f' % W)
