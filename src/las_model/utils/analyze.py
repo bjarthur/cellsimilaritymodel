@@ -1,3 +1,5 @@
+import os
+from concurrent.futures import ProcessPoolExecutor
 import numpy as np 
 from las_model.utils import motiffunc as mf 
 
@@ -45,7 +47,30 @@ def calculate_division_differences(divStates, rng):
 
     return dsis, drnd, vardsis, vardrnd, normvar
 
-def calculate_offspring_similarity_time(motherCell,metadata,rng):
+def _simulate_cell_triplet(task_args):
+    """Simulate the 3 offspring cells (sis1, sis2, rnd1) for a single cell index."""
+    i, sis1_state, sis2_state, rnd1_state, mother_cell, metadata, seed = task_args
+    child_rng = np.random.default_rng(seed)
+
+    sis1 = mf.Cell(metadata['Tcc'], metadata['varTcc'], child_rng)
+    sis1.inherit(mother_cell, sis1_state)
+    sis1.run(metadata['nCycles'])
+    molecules_sis1 = sis1.getMolecules()
+
+    sis2 = mf.Cell(metadata['Tcc'], metadata['varTcc'], child_rng)
+    sis2.inherit(mother_cell, sis2_state)
+    sis2.run(metadata['nCycles'])
+    molecules_sis2 = sis2.getMolecules()
+
+    rnd1 = mf.Cell(metadata['Tcc'], metadata['varTcc'], child_rng)
+    rnd1.inherit(mother_cell, rnd1_state)
+    rnd1.run(metadata['nCycles'])
+    molecules_rnd1 = rnd1.getMolecules()
+
+    return i, molecules_sis1, molecules_sis2, molecules_rnd1
+
+
+def calculate_offspring_similarity_time(motherCell, metadata, rng, num_workers=None):
     # Get division states and create offspring cells 
     divStates = (motherCell.getMotherStates()).astype('int')
 
@@ -55,47 +80,49 @@ def calculate_offspring_similarity_time(motherCell,metadata,rng):
     partnerIdx = rng.integers(0, metadata['nCells'], size=metadata['nCells'])
     rnd1states = rng.binomial(divStates[:, partnerIdx], 0.5)
 
-    # preallocate molecules lists
-    molcules = {
-        'sis1': [],
-        'sis2': [],
-        'rnd1': []
-    }
+    n_cells = metadata['nCells']
+    if num_workers is None:
+        num_workers = min(os.cpu_count() or 4, n_cells)
 
-    # Divide cells and run offspring
-    for i in range(metadata['nCells']):
-        print(f"Simulating cell {i+1}/{metadata['nCells']}")
-        
-        sis1 = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
-        sis1.inherit(motherCell,sis1states[:,i])
-        sis1.run(metadata['nCycles'])
-        molecules_sis1 = sis1.getMolecules()
-        
-        sis2 = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
-        sis2.inherit(motherCell,sis2states[:,i])
-        sis2.run(metadata['nCycles'])
-        molecules_sis2 = sis2.getMolecules()
-        
-        rnd1 = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
-        rnd1.inherit(motherCell,rnd1states[:,i])
-        rnd1.run(metadata['nCycles'])
-        molecules_rnd1 = rnd1.getMolecules()
+    # Generate statistically independent seeds for each task
+    seeds = rng.integers(0, 2**63 - 1, size=n_cells)
 
-        molcules['sis1'].append(molecules_sis1)
-        molcules['sis2'].append(molecules_sis2)
-        molcules['rnd1'].append(molecules_rnd1)
+    tasks = [
+        (i, sis1states[:, i], sis2states[:, i], rnd1states[:, i], motherCell, metadata, seeds[i])
+        for i in range(n_cells)
+    ]
 
-    # Stack molecule lists and compute pairwise differences for this kcat 
-    sis1stack = np.stack(molcules['sis1'],axis=1)
-    sis2stack = np.stack(molcules['sis2'],axis=1)
-    rnd1stack = np.stack(molcules['rnd1'],axis=1)
+    mol_sis1 = [None] * n_cells
+    mol_sis2 = [None] * n_cells
+    mol_rnd1 = [None] * n_cells
+
+    if num_workers == 1:
+        for task in tasks:
+            i, m_s1, m_s2, m_r1 = _simulate_cell_triplet(task)
+            mol_sis1[i] = m_s1
+            mol_sis2[i] = m_s2
+            mol_rnd1[i] = m_r1
+    else:
+        print(f"Simulating {n_cells} cells across {num_workers} parallel workers...")
+        import multiprocessing as mp
+        ctx = mp.get_context('fork')
+        with ProcessPoolExecutor(max_workers=num_workers, mp_context=ctx) as executor:
+            for i, m_s1, m_s2, m_r1 in executor.map(_simulate_cell_triplet, tasks):
+                mol_sis1[i] = m_s1
+                mol_sis2[i] = m_s2
+                mol_rnd1[i] = m_r1
+
+    # Stack molecule lists and compute pairwise differences
+    sis1stack = np.stack(mol_sis1, axis=1)
+    sis2stack = np.stack(mol_sis2, axis=1)
+    rnd1stack = np.stack(mol_rnd1, axis=1)
 
     dsis = sis1stack - sis2stack
     drnd = sis1stack - rnd1stack
 
-    vardsis = np.var(dsis,axis=1)
-    vardrnd = np.var(drnd,axis=1)
-    normvar = 1-vardsis/vardrnd
+    vardsis = np.var(dsis, axis=1)
+    vardrnd = np.var(drnd, axis=1)
+    normvar = 1 - vardsis / vardrnd
 
     return dsis, drnd, vardsis, vardrnd, normvar
 
