@@ -568,6 +568,29 @@ class Cell:
         self.C = np.array([0])
         self.D = np.array([0])
         self.E = np.array([0])
+        self._init_buffers()
+
+    def _init_buffers(self):
+        self.t_array = np.empty(self.arrSize)
+        self.V_array = np.empty(self.arrSize)
+        self.A_array = np.empty(self.arrSize)
+        self.B_array = np.empty(self.arrSize)
+        self.C_array = np.empty(self.arrSize)
+        self.D_array = np.empty(self.arrSize)
+        self.E_array = np.empty(self.arrSize)
+
+    def __getstate__(self):
+        """Exclude pre-allocated buffer arrays from being pickled."""
+        state = self.__dict__.copy()
+        buffers = ['t_array', 'V_array', 'A_array', 'B_array', 'C_array', 'D_array', 'E_array']
+        for key in buffers:
+            state.pop(key, None)
+        return state
+
+    #def __setstate__(self, state):
+    #    """Restore instance state and re-initialize buffer arrays when loaded."""
+    #    self.__dict__.update(state)
+    #    self._init_buffers()  # Omit this line if buffers are not needed after unpickling
     
     def parameterize(self,circuit,params):
         self.circuit = circuit
@@ -660,47 +683,39 @@ class Cell:
         
         growthRate = 1/self.divTime
         
-        t_array = np.zeros(self.arrSize)
-        V_array = np.zeros_like(t_array)
-        A_array = np.zeros_like(t_array)
-        B_array = np.zeros_like(t_array)
-        C_array = np.zeros_like(t_array)
-        D_array = np.zeros_like(t_array)
-        E_array = np.zeros_like(t_array)
-        
-        t_array[0] = self.t[-1]
-        V_array[0] = self.V[-1]
-        A_array[0] = self.A[-1]
-        B_array[0] = self.B[-1]
-        C_array[0] = self.C[-1]
-        D_array[0] = self.D[-1]
-        E_array[0] = self.E[-1]
+        self.t_array[0] = self.t[-1]
+        self.V_array[0] = self.V[-1]
+        self.A_array[0] = self.A[-1]
+        self.B_array[0] = self.B[-1]
+        self.C_array[0] = self.C[-1]
+        self.D_array[0] = self.D[-1]
+        self.E_array[0] = self.E[-1]
         
         n = 1
-        while V_array[n-1] < 2:
+        while self.V_array[n-1] < 2:
             
             # update arrays 
-            V_array[n] = V_array[n-1]
-            A_array[n] = A_array[n-1]
-            B_array[n] = B_array[n-1]
-            C_array[n] = C_array[n-1]
-            D_array[n] = D_array[n-1]
-            E_array[n] = E_array[n-1]
+            self.V_array[n] = self.V_array[n-1]
+            self.A_array[n] = self.A_array[n-1]
+            self.B_array[n] = self.B_array[n-1]
+            self.C_array[n] = self.C_array[n-1]
+            self.D_array[n] = self.D_array[n-1]
+            self.E_array[n] = self.E_array[n-1]
             
             # calculate reaction for time step 
-            A_array,B_array,C_array,D_array,E_array,tau = self.reaction(n,A_array,B_array,C_array,D_array,E_array)
+            self.A_array,self.B_array,self.C_array,self.D_array,self.E_array,tau = self.reaction(n,self.A_array,self.B_array,self.C_array,self.D_array,self.E_array)
             
             # calculate cell growth 
-            V_array[n] = V_array[n] + tau*growthRate
+            self.V_array[n] = self.V_array[n] + tau*growthRate
             
             # update time 
-            t_array[n] = t_array[n-1] + tau
+            self.t_array[n] = self.t_array[n-1] + tau
             
             # update counter
             n = n+1
             
-        
         self.arrSize = int(n * 20)
+        self._init_buffers()
     
     def cellCycle(self,partition='binomial'):
         self.runCycle()
@@ -738,53 +753,45 @@ class Cell:
         
         growthRate = 1/self.divTime
         
-        t_array = np.zeros(self.arrSize)
-        V_array = np.zeros_like(t_array)
-        A_array = np.zeros_like(t_array)
-        B_array = np.zeros_like(t_array)
-        C_array = np.zeros_like(t_array)
-        D_array = np.zeros_like(t_array)
-        E_array = np.zeros_like(t_array)
-        
-        t_array[0] = self.t[-1]
-        V_array[0] = self.V[-1]
-        A_array[0] = self.A[-1]
-        B_array[0] = self.B[-1]
-        C_array[0] = self.C[-1]
-        D_array[0] = self.D[-1]
-        E_array[0] = self.E[-1]
+        self.t_array[0] = self.t[-1]
+        self.V_array[0] = self.V[-1]
+        self.A_array[0] = self.A[-1]
+        self.B_array[0] = self.B[-1]
+        self.C_array[0] = self.C[-1]
+        self.D_array[0] = self.D[-1]
+        self.E_array[0] = self.E[-1]
         
         n = 1
-        while V_array[n-1] < 2:
+        while self.V_array[n-1] < 2:
             
             # update arrays 
-            V_array[n] = V_array[n-1]
-            A_array[n] = A_array[n-1]
-            B_array[n] = B_array[n-1]
-            C_array[n] = C_array[n-1]
-            D_array[n] = D_array[n-1]
-            E_array[n] = E_array[n-1]
+            self.V_array[n] = self.V_array[n-1]
+            self.A_array[n] = self.A_array[n-1]
+            self.B_array[n] = self.B_array[n-1]
+            self.C_array[n] = self.C_array[n-1]
+            self.D_array[n] = self.D_array[n-1]
+            self.E_array[n] = self.E_array[n-1]
             
             # calculate reaction for time step 
-            A_array,B_array,C_array,D_array,E_array,tau = self.reaction(n,A_array,B_array,C_array,D_array,E_array)
+            self.A_array,self.B_array,self.C_array,self.D_array,self.E_array,tau = self.reaction(n,self.A_array,self.B_array,self.C_array,self.D_array,self.E_array)
             
             # calculate cell growth 
-            V_array[n] = V_array[n] + tau*growthRate
+            self.V_array[n] = self.V_array[n] + tau*growthRate
             
             # update time 
-            t_array[n] = t_array[n-1] + tau
+            self.t_array[n] = self.t_array[n-1] + tau
             
             # update counter
             n = n+1
         
         # trim arrays
-        self.t = np.concatenate((self.t,t_array[1:n]))
-        self.V = np.concatenate((self.V,V_array[1:n]))
-        self.A = np.concatenate((self.A,A_array[1:n]))
-        self.B = np.concatenate((self.B,B_array[1:n]))
-        self.C = np.concatenate((self.C,C_array[1:n]))
-        self.D = np.concatenate((self.D,D_array[1:n]))
-        self.E = np.concatenate((self.E,E_array[1:n]))
+        self.t = np.concatenate((self.t,self.t_array[1:n]))
+        self.V = np.concatenate((self.V,self.V_array[1:n]))
+        self.A = np.concatenate((self.A,self.A_array[1:n]))
+        self.B = np.concatenate((self.B,self.B_array[1:n]))
+        self.C = np.concatenate((self.C,self.C_array[1:n]))
+        self.D = np.concatenate((self.D,self.D_array[1:n]))
+        self.E = np.concatenate((self.E,self.E_array[1:n]))
         
     def reaction(self,n,A_array,B_array,C_array,D_array,E_array):
         
@@ -1093,6 +1100,9 @@ class Cell:
         self.lineage = copy.copy(motherCell.lineage)
         self.divTimes = copy.copy(motherCell.divTimes)
         self.circuit = motherCell.circuit
+        if self.arrSize != motherCell.arrSize:
+            self.arrSize = motherCell.arrSize
+            self._init_buffers()
         self.prodA = motherCell.prodA
         self.prodB = motherCell.prodB
         self.prodC = motherCell.prodC
@@ -1125,5 +1135,3 @@ class Cell:
                 i += 1
             
             return gen - i
-    
-        
