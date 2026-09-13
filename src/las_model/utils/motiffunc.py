@@ -2,6 +2,7 @@
 
 import numpy as np 
 # rng = np.random.default_rng(seed=1000)
+import math
 
 class Cell:
     def __init__(self,Tcc,varTcc,rng):
@@ -549,10 +550,10 @@ class Cell:
             Rtot = prodA
             
             # generate random numbers
-            r1 = self.rng.uniform()
+            r1 = self.rng.random()
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             A = A + 1
@@ -566,10 +567,10 @@ class Cell:
             Rtot = prodA
             
             # generate random numbers
-            r1 = self.rng.uniform()
+            r1 = self.rng.random()
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             A = A + 1
@@ -583,10 +584,10 @@ class Cell:
             Rtot = prodA
             
             # generate random numbers
-            r1 = self.rng.uniform()
+            r1 = self.rng.random()
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             A = A + 1    
@@ -601,11 +602,11 @@ class Cell:
             Rtot = prodA + prodB + prodC
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -627,11 +628,11 @@ class Cell:
              Rtot = prodA + prodB + prodC
              
              # generate random numbers
-             r1 = self.rng.uniform()
-             r2 = self.rng.uniform() * Rtot
+             r1 = self.rng.random()
+             r2 = self.rng.random() * Rtot
              
              # calculate time step
-             tau = 1/Rtot*np.log(1/r1)
+             tau = -math.log(r1)/Rtot
              
              # pick reaction 
              if r2 < prodA:
@@ -654,11 +655,11 @@ class Cell:
             Rtot = prodA + prodB + prodC + revC
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -683,11 +684,11 @@ class Cell:
             Rtot = self.prodA + prodB
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -704,11 +705,11 @@ class Cell:
             Rtot = self.prodA + prodB
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -725,11 +726,11 @@ class Cell:
             Rtot = prodA + prodB + prodC
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -750,11 +751,11 @@ class Cell:
             Rtot = prodB + prodC
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodB:
@@ -775,11 +776,11 @@ class Cell:
             Rtot = prodA + prodB + prodC
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -799,11 +800,11 @@ class Cell:
             Rtot = prodA + prodB + prodC + degC
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -825,11 +826,11 @@ class Cell:
             Rtot = prodA + prodB + prodC + prodD
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -864,11 +865,11 @@ class Cell:
             Rtot = prodA + prodB + formB + formBp + prodC
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction
             if r2 < prodA:
@@ -900,11 +901,11 @@ class Cell:
             Rtot = prodA + prodAp + prodB + prodApB + prodBp
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -955,11 +956,11 @@ class Cell:
             Rtot = prodA + prodB + a_phos + a_dephos + apb_bind + apb_unbind + tphos + abp_bind + abp_unbind + dephos
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -1023,11 +1024,11 @@ class Cell:
             Rtot = prodA + prodB + formB + formBp + prodC
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction
             if r2 < prodA:
@@ -1054,11 +1055,11 @@ class Cell:
             Rtot = prodA + prodB + prodC + prodD
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -1083,11 +1084,11 @@ class Cell:
             Rtot = prodA + prodB + prodC + degC + prodD
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -1115,11 +1116,11 @@ class Cell:
             Rtot = prodA + prodB + prodC + prodD + prodE + prodF
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -1151,11 +1152,11 @@ class Cell:
             Rtot = prodA + prodB + prodC + degB + prodD + prodE + degD + prodF
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
@@ -1194,11 +1195,11 @@ class Cell:
             Rtot = prodA + prodAp + prodB + prodApB + prodBp + prodP
             
             # generate random numbers
-            r1 = self.rng.uniform()
-            r2 = self.rng.uniform() * Rtot
+            r1 = self.rng.random()
+            r2 = self.rng.random() * Rtot
             
             # calculate time step
-            tau = 1/Rtot*np.log(1/r1)
+            tau = -math.log(r1)/Rtot
             
             # pick reaction 
             if r2 < prodA:
