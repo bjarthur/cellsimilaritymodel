@@ -31,6 +31,30 @@ class Cell:
         self.D = np.array([0])
         self.E = np.array([0])
         self.F = np.array([0])
+        self._init_buffers()
+
+    def _init_buffers(self):
+        self.t_array = np.empty(self.arrSize)
+        self.V_array = np.empty(self.arrSize)
+        self.A_array = np.empty(self.arrSize)
+        self.B_array = np.empty(self.arrSize)
+        self.C_array = np.empty(self.arrSize)
+        self.D_array = np.empty(self.arrSize)
+        self.E_array = np.empty(self.arrSize)
+        self.F_array = np.empty(self.arrSize)
+
+    def __getstate__(self):
+        """Exclude pre-allocated buffer arrays from being pickled."""
+        state = self.__dict__.copy()
+        buffers = ['t_array', 'V_array', 'A_array', 'B_array', 'C_array', 'D_array', 'E_array', 'F_array']
+        for key in buffers:
+            state.pop(key, None)
+        return state
+
+    #def __setstate__(self, state):
+    #    """Restore instance state and re-initialize buffer arrays when loaded."""
+    #    self.__dict__.update(state)
+    #    self._init_buffers()  # Omit this line if buffers are not needed after unpickling
         
     def parameterize(self,circuit,params):
         self.circuit = circuit
@@ -279,7 +303,9 @@ class Cell:
 
     def inherit(self,motherCell,motherState):
         self.circuit = motherCell.circuit
-        self.arrSize = motherCell.arrSize
+        if self.arrSize != motherCell.arrSize:
+            self.arrSize = motherCell.arrSize
+            self._init_buffers()
         self.prodA = motherCell.prodA
         self.prodB = motherCell.prodB
         self.prodC = motherCell.prodC
@@ -393,44 +419,35 @@ class Cell:
         
         growthRate = 1/self.divTime
         
-        t_array = np.zeros(self.arrSize)
-        V_array = np.zeros_like(t_array)
-        A_array = np.zeros_like(t_array)
-        B_array = np.zeros_like(t_array)
-        C_array = np.zeros_like(t_array)
-        D_array = np.zeros_like(t_array)
-        E_array = np.zeros_like(t_array)
-        F_array = np.zeros_like(t_array)
-        
-        t_array[0] = self.t
-        V_array[0] = self.V
-        A_array[0] = self.A
-        B_array[0] = self.B
-        C_array[0] = self.C
-        D_array[0] = self.D
-        E_array[0] = self.E
-        F_array[0] = self.F
+        self.t_array[0] = self.t
+        self.V_array[0] = self.V
+        self.A_array[0] = self.A
+        self.B_array[0] = self.B
+        self.C_array[0] = self.C
+        self.D_array[0] = self.D
+        self.E_array[0] = self.E
+        self.F_array[0] = self.F
         
         n = 1
-        while V_array[n-1] < 2:
+        while self.V_array[n-1] < 2:
             
             # update arrays 
-            V_array[n] = V_array[n-1]
-            A_array[n] = A_array[n-1]
-            B_array[n] = B_array[n-1]
-            C_array[n] = C_array[n-1]
-            D_array[n] = D_array[n-1]
-            E_array[n] = E_array[n-1]
-            F_array[n] = F_array[n-1]
+            self.V_array[n] = self.V_array[n-1]
+            self.A_array[n] = self.A_array[n-1]
+            self.B_array[n] = self.B_array[n-1]
+            self.C_array[n] = self.C_array[n-1]
+            self.D_array[n] = self.D_array[n-1]
+            self.E_array[n] = self.E_array[n-1]
+            self.F_array[n] = self.F_array[n-1]
             
             # calculate reaction for time step 
-            A_array[n],B_array[n],C_array[n],D_array[n],E_array[n],F_array[n],tau = self.reaction(A_array[n],B_array[n],C_array[n],D_array[n],E_array[n],F_array[n],V_array[n])
+            self.A_array[n],self.B_array[n],self.C_array[n],self.D_array[n],self.E_array[n],self.F_array[n],tau = self.reaction(self.A_array[n],self.B_array[n],self.C_array[n],self.D_array[n],self.E_array[n],self.F_array[n],self.V_array[n])
             
             # calculate cell growth 
-            V_array[n] = V_array[n] + tau*growthRate
+            self.V_array[n] = self.V_array[n] + tau*growthRate
             
             # update time 
-            t_array[n] = t_array[n-1] + tau
+            self.t_array[n] = self.t_array[n-1] + tau
             
             # update counter
             n = n+1
@@ -440,6 +457,9 @@ class Cell:
         
         if self.arrSize < 1e4:
             self.arrSize = int(1e5)
+
+        self._init_buffers()
+
         print(f"Setting self.arrSize to: {self.arrSize}")
 
     def runCycle(self,cycleIndex):
@@ -447,79 +467,68 @@ class Cell:
         self.updateDivTimes()
         growthRate = 1/self.divTime
         
-        t_array = np.zeros(self.arrSize)
-        V_array = np.zeros_like(t_array)
-        A_array = np.zeros_like(t_array)
-        B_array = np.zeros_like(t_array)
-        C_array = np.zeros_like(t_array)
-        D_array = np.zeros_like(t_array)
-        E_array = np.zeros_like(t_array)
-        F_array = np.zeros_like(t_array)
-        
-        t_array[0] = self.t
-        V_array[0] = self.V
-        A_array[0] = self.A
-        B_array[0] = self.B
-        C_array[0] = self.C
-        D_array[0] = self.D
-        E_array[0] = self.E
-        F_array[0] = self.F
+        self.t_array[0] = self.t
+        self.V_array[0] = self.V
+        self.A_array[0] = self.A
+        self.B_array[0] = self.B
+        self.C_array[0] = self.C
+        self.D_array[0] = self.D
+        self.E_array[0] = self.E
+        self.F_array[0] = self.F
         
         n = 1
-        while V_array[n-1] < 2:
+        while self.V_array[n-1] < 2:
             
             # update arrays 
-            V_array[n] = V_array[n-1]
-            A_array[n] = A_array[n-1]
-            B_array[n] = B_array[n-1]
-            C_array[n] = C_array[n-1]
-            D_array[n] = D_array[n-1]
-            E_array[n] = E_array[n-1]
-            F_array[n] = F_array[n-1]
+            self.V_array[n] = self.V_array[n-1]
+            self.A_array[n] = self.A_array[n-1]
+            self.B_array[n] = self.B_array[n-1]
+            self.C_array[n] = self.C_array[n-1]
+            self.D_array[n] = self.D_array[n-1]
+            self.E_array[n] = self.E_array[n-1]
+            self.F_array[n] = self.F_array[n-1]
             
             # calculate reaction for time step 
-            A_array[n],B_array[n],C_array[n],D_array[n],E_array[n],F_array[n],tau = self.reaction(A_array[n],B_array[n],C_array[n],D_array[n],E_array[n],F_array[n],V_array[n])
+            self.A_array[n],self.B_array[n],self.C_array[n],self.D_array[n],self.E_array[n],self.F_array[n],tau = self.reaction(self.A_array[n],self.B_array[n],self.C_array[n],self.D_array[n],self.E_array[n],self.F_array[n],self.V_array[n])
             
             # calculate cell growth 
-            V_array[n] = V_array[n] + tau*growthRate
+            self.V_array[n] = self.V_array[n] + tau*growthRate
             
             # update time 
-            t_array[n] = t_array[n-1] + tau
+            self.t_array[n] = self.t_array[n-1] + tau
             
             # update counter
             n = n+1
         
         # print('Array size: %i, cycle size: %i' % (self.arrSize,n))
         
-        # print(f"At the end of cycle {cycleIndex}, t={t_array[n-1]}, V={V_array[n-1]}, A={A_array[n-1]}, B={B_array[n-1]}")
+        # print(f"At the end of cycle {cycleIndex}, t={self.t_array[n-1]}, V={self.V_array[n-1]}, A={self.A_array[n-1]}, B={self.B_array[n-1]}")
 
         # update mother state
-        self.motherStates[0,cycleIndex] = t_array[n-1]
-        self.motherStates[1,cycleIndex] = V_array[n-1]
-        self.motherStates[2,cycleIndex] = A_array[n-1]
-        self.motherStates[3,cycleIndex] = B_array[n-1]
-        self.motherStates[4,cycleIndex] = C_array[n-1]
-        self.motherStates[5,cycleIndex] = D_array[n-1]
-        self.motherStates[6,cycleIndex] = E_array[n-1]
-        self.motherStates[7,cycleIndex] = F_array[n-1]
-        
-        t_array = np.trim_zeros(t_array,'b')
+        self.motherStates[0,cycleIndex] = self.t_array[n-1]
+        self.motherStates[1,cycleIndex] = self.V_array[n-1]
+        self.motherStates[2,cycleIndex] = self.A_array[n-1]
+        self.motherStates[3,cycleIndex] = self.B_array[n-1]
+        self.motherStates[4,cycleIndex] = self.C_array[n-1]
+        self.motherStates[5,cycleIndex] = self.D_array[n-1]
+        self.motherStates[6,cycleIndex] = self.E_array[n-1]
+        self.motherStates[7,cycleIndex] = self.F_array[n-1]
         
         # update downsampled molecule tracker
-        times = np.linspace(t_array[0],t_array[-1],int(self.Tcc/10)+1)
-        t_repeat = np.repeat(t_array[:,np.newaxis],len(times),axis=1)
+        times = np.linspace(self.t_array[0],self.t_array[n-1],int(self.Tcc/10)+1)
+        t_repeat = np.repeat(self.t_array[:n,np.newaxis],len(times),axis=1)
         
         indices = np.argmin(abs(np.subtract(t_repeat,times)),axis=0)
         
         # print(indices)
         
         molecules = np.zeros([6,len(indices)])
-        molecules[0] = A_array[indices]/V_array[indices]
-        molecules[1] = B_array[indices]/V_array[indices]
-        molecules[2] = C_array[indices]/V_array[indices]
-        molecules[3] = D_array[indices]/V_array[indices]
-        molecules[4] = E_array[indices]/V_array[indices]
-        molecules[5] = F_array[indices]/V_array[indices]
+        molecules[0] = self.A_array[indices]/self.V_array[indices]
+        molecules[1] = self.B_array[indices]/self.V_array[indices]
+        molecules[2] = self.C_array[indices]/self.V_array[indices]
+        molecules[3] = self.D_array[indices]/self.V_array[indices]
+        molecules[4] = self.E_array[indices]/self.V_array[indices]
+        molecules[5] = self.F_array[indices]/self.V_array[indices]
         
         startIndex = cycleIndex*int(self.Tcc/10)
         endIndex = (cycleIndex+1)*int(self.Tcc/10)+1
