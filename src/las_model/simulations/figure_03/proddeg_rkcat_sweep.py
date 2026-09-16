@@ -21,7 +21,7 @@ metadata = {
     'varTcc': 0,
     'circuit': 'proddeg',
     'PprodA': 10**-1,
-    'kcatAs': np.logspace(-1.3,0,20),
+    'kcatAs': list(np.logspace(-1.3,0,20)),
     'PprodB': 10**-1
 }
 
