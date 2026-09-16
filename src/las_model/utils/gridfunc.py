@@ -7,6 +7,7 @@ import copy, cv2, cmapy
 from datetime import datetime
 from scipy import stats 
 import math
+from las_model.utils.gillespie_numba import run_cycle_numba, pack_params, to_scalar, step_reaction
 
 rng = np.random.default_rng(seed=1000)
 
@@ -582,11 +583,12 @@ class Cell:
         self.C_array = np.empty(self.arrSize)
         self.D_array = np.empty(self.arrSize)
         self.E_array = np.empty(self.arrSize)
+        self.F_array = np.empty(self.arrSize)
 
     def __getstate__(self):
         """Exclude pre-allocated buffer arrays from being pickled."""
         state = self.__dict__.copy()
-        buffers = ['t_array', 'V_array', 'A_array', 'B_array', 'C_array', 'D_array', 'E_array']
+        buffers = ['t_array', 'V_array', 'A_array', 'B_array', 'C_array', 'D_array', 'E_array', 'F_array']
         for key in buffers:
             state.pop(key, None)
         return state
@@ -684,40 +686,21 @@ class Cell:
         self.sampleCycle()
     
     def sampleCycle(self):
-        
         growthRate = 1/self.divTime
-        
-        self.t_array[0] = self.t[-1]
-        self.V_array[0] = self.V[-1]
-        self.A_array[0] = self.A[-1]
-        self.B_array[0] = self.B[-1]
-        self.C_array[0] = self.C[-1]
-        self.D_array[0] = self.D[-1]
-        self.E_array[0] = self.E[-1]
-        
-        n = 1
-        while self.V_array[n-1] < 2:
-            
-            # update arrays 
-            self.V_array[n] = self.V_array[n-1]
-            self.A_array[n] = self.A_array[n-1]
-            self.B_array[n] = self.B_array[n-1]
-            self.C_array[n] = self.C_array[n-1]
-            self.D_array[n] = self.D_array[n-1]
-            self.E_array[n] = self.E_array[n-1]
-            
-            # calculate reaction for time step 
-            self.A_array,self.B_array,self.C_array,self.D_array,self.E_array,tau = self.reaction(n,self.A_array,self.B_array,self.C_array,self.D_array,self.E_array)
-            
-            # calculate cell growth 
-            self.V_array[n] = self.V_array[n] + tau*growthRate
-            
-            # update time 
-            self.t_array[n] = self.t_array[n-1] + tau
-            
-            # update counter
-            n = n+1
-            
+        params = pack_params(self)
+        circuit = self.circuit if self.circuit in (
+            'single', 'bind', 'prodsat', 'produnsat', 'cascade', 'proddeg', 'phos', 'diffTF', 'cdg'
+        ) else 'grid_relay'
+        n, _, _, _, _, _, _, _, _, overflow = run_cycle_numba(
+            circuit,
+            to_scalar(self.A), to_scalar(self.B), to_scalar(self.C),
+            to_scalar(self.D), to_scalar(self.E), 0.0,
+            to_scalar(self.V), to_scalar(self.t),
+            growthRate, params, getattr(self, 'rng', rng),
+            self.t_array, self.V_array, self.A_array, self.B_array,
+            self.C_array, self.D_array, self.E_array, self.F_array,
+            len(self.t_array)
+        )
         self.arrSize = int(n * 20)
         self._init_buffers()
     
@@ -754,40 +737,35 @@ class Cell:
             return
     
     def runCycle(self):
-        
         growthRate = 1/self.divTime
-        
-        self.t_array[0] = self.t[-1]
-        self.V_array[0] = self.V[-1]
-        self.A_array[0] = self.A[-1]
-        self.B_array[0] = self.B[-1]
-        self.C_array[0] = self.C[-1]
-        self.D_array[0] = self.D[-1]
-        self.E_array[0] = self.E[-1]
-        
-        n = 1
-        while self.V_array[n-1] < 2:
-            
-            # update arrays 
-            self.V_array[n] = self.V_array[n-1]
-            self.A_array[n] = self.A_array[n-1]
-            self.B_array[n] = self.B_array[n-1]
-            self.C_array[n] = self.C_array[n-1]
-            self.D_array[n] = self.D_array[n-1]
-            self.E_array[n] = self.E_array[n-1]
-            
-            # calculate reaction for time step 
-            self.A_array,self.B_array,self.C_array,self.D_array,self.E_array,tau = self.reaction(n,self.A_array,self.B_array,self.C_array,self.D_array,self.E_array)
-            
-            # calculate cell growth 
-            self.V_array[n] = self.V_array[n] + tau*growthRate
-            
-            # update time 
-            self.t_array[n] = self.t_array[n-1] + tau
-            
-            # update counter
-            n = n+1
-        
+        params = pack_params(self)
+        circuit = self.circuit if self.circuit in (
+            'single', 'bind', 'prodsat', 'produnsat', 'cascade', 'proddeg', 'phos', 'diffTF', 'cdg'
+        ) else 'grid_relay'
+        n, _, _, _, _, _, _, _, _, overflow = run_cycle_numba(
+            circuit,
+            to_scalar(self.A), to_scalar(self.B), to_scalar(self.C),
+            to_scalar(self.D), to_scalar(self.E), 0.0,
+            to_scalar(self.V), to_scalar(self.t),
+            growthRate, params, getattr(self, 'rng', rng),
+            self.t_array, self.V_array, self.A_array, self.B_array,
+            self.C_array, self.D_array, self.E_array, self.F_array,
+            len(self.t_array)
+        )
+        while overflow:
+            self.arrSize *= 2
+            self._init_buffers()
+            n, _, _, _, _, _, _, _, _, overflow = run_cycle_numba(
+                circuit,
+                to_scalar(self.A), to_scalar(self.B), to_scalar(self.C),
+                to_scalar(self.D), to_scalar(self.E), 0.0,
+                to_scalar(self.V), to_scalar(self.t),
+                growthRate, params, getattr(self, 'rng', rng),
+                self.t_array, self.V_array, self.A_array, self.B_array,
+                self.C_array, self.D_array, self.E_array, self.F_array,
+                len(self.t_array)
+            )
+
         # trim arrays
         self.t = np.concatenate((self.t,self.t_array[1:n]))
         self.V = np.concatenate((self.V,self.V_array[1:n]))
@@ -798,300 +776,21 @@ class Cell:
         self.E = np.concatenate((self.E,self.E_array[1:n]))
         
     def reaction(self,n,A_array,B_array,C_array,D_array,E_array):
-        
-        if self.circuit == 'single':
-            # calculate probabilities
-            prodA = self.prodA
-            
-            Rtot = prodA
-            
-            # generate random numbers
-            r1 = rng.random()
-            
-            # calculate time step
-            tau = -math.log(r1)/Rtot
-            
-            # pick reaction 
-            A_array[n] = A_array[n] + 1
-            
-        
-        elif self.circuit == 'bind':
-            # get values
-            A = A_array[n]
-            B = B_array[n]
-            
-            # calculate probabilities
-            prodA = self.prodA
-            prodB = self.prodB
-            prodC = self.k1 * A * B
-            
-            Rtot = prodA + prodB + prodC
-            
-            # generate random numbers
-            r1 = rng.random()
-            r2 = rng.random() * Rtot
-            
-            # calculate time step
-            tau = -math.log(r1)/Rtot
-            
-            # pick reaction 
-            if r2 < prodA:
-                A_array[n] = A_array[n] + 1
-            elif r2 < prodA + prodB:
-                B_array[n] = B_array[n] + 1
-            else:
-                A_array[n] = A_array[n] - 1
-                B_array[n] = B_array[n] - 1
-                C_array[n] = C_array[n] + 1
-        
-        elif self.circuit == 'prodsat':
-            
-            # get values
-            A = A_array[n]
-            
-            # calculate probabilities
-            prodA = self.prodA
-            prodB = self.k1 * A
-            
-            Rtot = self.prodA + prodB
-            
-            # generate random numbers
-            r1 = rng.random()
-            r2 = rng.random() * Rtot
-            
-            # calculate time step
-            tau = -math.log(r1)/Rtot
-            
-            # pick reaction 
-            if r2 < prodA:
-                A_array[n] = A_array[n] + 1
-            else:
-                B_array[n] = B_array[n] + 1
-        
-        elif self.circuit == 'produnsat':
-            
-            A = A_array[n]
-            B = B_array[n]
-            
-            prodA = self.prodA
-            prodB = self.prodB
-            prodC = self.k1/2 * (self.k2+A+B-np.sqrt((self.k2+A+B)**2-4*A*B))
-            
-            Rtot = prodA + prodB + prodC
-            
-            # generate random numbers
-            r1 = rng.random()
-            r2 = rng.random() * Rtot
-            
-            # calculate time step
-            tau = -math.log(r1)/Rtot
-            
-            # pick reaction 
-            if r2 < prodA:
-                A_array[n] = A_array[n] + 1
-            elif r2 < prodA + prodB:
-                B_array[n] = B_array[n] + 1
-            else:
-                A_array[n] = A_array[n] - 1
-                C_array[n] = C_array[n] + 1
-        
-        elif self.circuit == 'cascade':
-            
-            A = A_array[n]
-            B = B_array[n]
-            
-            prodA = self.prodA
-            prodB = self.k1 * A
-            prodC = self.k2 * B
-            
-            Rtot = prodA + prodB + prodC
-            
-            # generate random numbers
-            r1 = rng.random()
-            r2 = rng.random() * Rtot
-            
-            # calculate time step
-            tau = -math.log(r1)/Rtot
-            
-            # pick reaction 
-            if r2 < prodA:
-                A_array[n] = A_array[n] + 1
-            elif r2 < prodA + prodB:
-                B_array[n] = B_array[n] + 1
-            else:
-                C_array[n] = C_array[n] + 1
-        
-        elif self.circuit == 'proddeg':
-            
-            A = A_array[n]
-            B = B_array[n]
-            C = C_array[n]
-            
-            prodA = self.prodA
-            prodB = self.prodB
-            prodC = self.k1*A
-            degC = self.k2/2*(self.k3+B+C-np.sqrt((self.k3+B+C)**2-4*B*C))
-            
-            Rtot = prodA + prodB + prodC + degC
-            
-            # generate random numbers
-            r1 = rng.random()
-            r2 = rng.random() * Rtot
-            
-            # calculate time step
-            tau = -math.log(r1)/Rtot
-            
-            # pick reaction 
-            if r2 < prodA:
-                A_array[n] = A_array[n] + 1
-            elif r2 < prodA + prodB:
-                B_array[n] = B_array[n] + 1
-            elif r2 < prodA + prodB + prodC:
-                C_array[n] = C_array[n] + 1
-            else:
-                C_array[n] = C_array[n] - 1
-                
-        elif self.circuit == 'phos':
-            
-            A = A_array[n]
-            B = B_array[n]
-            C = C_array[n]
-            
-            prodA = self.prodA
-            prodC = self.prodB
-            prodB = self.k1*A
-            prodD = self.k2*B*C
-            
-            Rtot = prodA + prodB + prodC + prodD
-            
-            # generate random numbers
-            r1 = rng.random()
-            r2 = rng.random() * Rtot
-            
-            # calculate time step
-            tau = -math.log(r1)/Rtot
-            
-            # pick reaction 
-            if r2 < prodA:
-                A_array[n] = A_array[n] + 1
-            elif r2 < prodA + prodB:
-                A_array[n] = A_array[n] - 1
-                B_array[n] = B_array[n] + 1
-            elif r2 < prodA + prodB + prodC:
-                C_array[n] = C_array[n] + 1
-            else:
-                A_array[n] = A_array[n] + 1
-                B_array[n] = B_array[n] - 1
-                C_array[n] = C_array[n] - 1
-                D_array[n] = D_array[n] + 1
-                
-        elif self.circuit == 'diffTF':
-            
-            # get values
-            A = A_array[n]
-            B = B_array[n]
-            C = C_array[n]
-            
-            # calculate probabilities
-            prodA = self.prodA
-            prodB = self.prodB
-            prodC = self.k1 * A * B
-            prodD = self.k2 * C
-            
-            Rtot = prodA + prodB + prodC + prodD
-            
-            # generate random numbers
-            r1 = rng.random()
-            r2 = rng.random() * Rtot
-            
-            # calculate time step
-            tau = -math.log(r1)/Rtot
-            
-            # pick reaction 
-            if r2 < prodA:
-                A_array[n] = A_array[n] + 1
-            elif r2 < prodA + prodB:
-                B_array[n] = B_array[n] + 1
-            elif r2 < prodA + prodB + prodC:
-                A_array[n] = A_array[n] - 1
-                B_array[n] = B_array[n] - 1
-                C_array[n] = C_array[n] + 1
-            else:
-                D_array[n] = D_array[n] + 1
-    
-        elif self.circuit == 'cdg':
-            
-            A = A_array[n]
-            B = B_array[n]
-            C = C_array[n]
-            
-            prodA = self.prodA
-            prodB = self.prodB
-            prodC = self.k1*A
-            degC = self.k2/2*(self.k3+B+C-np.sqrt((self.k3+B+C)**2-4*B*C))
-            prodD = self.k4 * C
-            
-            Rtot = prodA + prodB + prodC + degC + prodD
-            
-            # generate random numbers
-            r1 = rng.random()
-            r2 = rng.random() * Rtot
-            
-            # calculate time step
-            tau = -math.log(r1)/Rtot
-            
-            # pick reaction 
-            if r2 < prodA:
-                A_array[n] = A_array[n] + 1
-            elif r2 < prodA + prodB:
-                B_array[n] = B_array[n] + 1
-            elif r2 < prodA + prodB + prodC:
-                C_array[n] = C_array[n] + 1
-            elif r2 < prodA + prodB + prodC + degC:
-                C_array[n] = C_array[n] - 1
-            else:
-                D_array[n] = D_array[n] + 1
-                
-        else:
-            
-            A = A_array[n]
-            B = B_array[n]
-            C = C_array[n]
-            D = D_array[n]
-            
-            prodA = self.prodA
-            prodB = self.k1*A
-            prodC = self.prodC
-            prodD = self.k2*B*C
-            prodE = self.k3*D
-            
-            Rtot = prodA + prodB + prodC + prodD + prodE
-            
-            # generate random numbers
-            r1 = rng.random()
-            r2 = rng.random() * Rtot
-            
-            # calculate time step
-            tau = -math.log(r1)/Rtot
-            
-            # pick reaction 
-            if r2 < prodA:
-                A_array[n] = A_array[n] + 1
-            elif r2 < prodA + prodB:
-                A_array[n] = A_array[n] - 1
-                B_array[n] = B_array[n] + 1
-            elif r2 < prodA + prodB + prodC:
-                C_array[n] = C_array[n] + 1
-            elif r2 < prodA + prodB + prodC + prodD:
-                A_array[n] = A_array[n] + 1
-                B_array[n] = B_array[n] - 1
-                C_array[n] = C_array[n] - 1
-                D_array[n] = D_array[n] + 1
-            else:
-                E_array[n] = E_array[n] + 1
-        
-        
-        return A_array,B_array,C_array,D_array,E_array,tau
+        params = pack_params(self)
+        circuit = self.circuit if self.circuit in (
+            'single', 'bind', 'prodsat', 'produnsat', 'cascade', 'proddeg', 'phos', 'diffTF', 'cdg'
+        ) else 'grid_relay'
+        A, B, C, D, E, _, tau = step_reaction(
+            circuit,
+            A_array[n], B_array[n], C_array[n], D_array[n], E_array[n], 0.0,
+            self.V_array[n], params, getattr(self, 'rng', rng)
+        )
+        A_array[n] = A
+        B_array[n] = B
+        C_array[n] = C
+        D_array[n] = D
+        E_array[n] = E
+        return A_array, B_array, C_array, D_array, E_array, tau
     
     def updateDivTimes(self):
         self.divTime = int(rng.normal(self.Tcc,self.varTcc))
