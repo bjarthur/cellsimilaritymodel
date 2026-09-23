@@ -8,6 +8,7 @@ from datetime import datetime
 from scipy import stats 
 import math
 from las_model.utils.gillespie_numba import run_cycle_numba, pack_params, to_scalar, step_reaction
+from las_model.utils.parameterize import parameterize_cell
 
 rng = np.random.default_rng(seed=1000)
 
@@ -600,91 +601,9 @@ class Cell:
     
     def parameterize(self,circuit,params):
         self.circuit = circuit
-        if circuit == 'single':
-            self.prodA = params[0]
-            self.A[0] = self.prodA * self.Tcc
-        elif circuit == 'bind':
-            self.prodA = params[0]
-            self.prodB = params[1]
-            self.k1 = params[2]
-            
-            self.A[0] = self.prodA * self.Tcc
-            self.B[0] = self.prodB * self.Tcc
-        elif circuit == 'prodsat':
-            self.prodA = params[0]
-            self.k1 = params[1]
-            
-            self.A[0] = self.prodA * self.Tcc
-            self.B[0] = 3/2 * self.prodA * self.k1 * self.Tcc**2
-            
-        elif circuit == 'produnsat':
-            self.prodA = params[0]
-            self.prodB = params[1]
-            self.k1 = params[2]
-            self.k2 = params[3]
-            
-            Aest = int(self.prodA * self.Tcc - self.k1 * self.Tcc * self.prodA * self.Tcc * self.prodB * self.Tcc / (self.k2+self.prodA * self.Tcc * self.prodB * self.Tcc))
-            if Aest > 0:
-                self.A[0] = Aest
-            else:
-                self.A[0] = 0
-            self.B[0] = int(self.prodB * self.Tcc)
-            self.C[0] = int(4* self.k1 * self.Tcc * self.prodA * self.Tcc * self.prodB * self.Tcc / (self.k2+self.prodA * self.Tcc * self.prodB * self.Tcc))
-            
-        elif circuit =='cascade':
-            self.prodA = params[0]
-            self.k1 = params[1]
-            self.k2 = params[2]
-        
-        elif circuit == 'proddeg':
-            self.prodA = params[0]
-            self.prodB = params[1]
-            self.k1 = params[2]
-            self.k2 = params[3]
-            self.k3 = params[4]
-            
-            self.A[0] = self.prodA * self.Tcc
-            self.B[0] = self.prodB * self.Tcc
-            self.C[0] = self.k3
-            
-        elif circuit == 'phos':
-            self.prodA = params[0]
-            self.prodB = params[1]
-            self.k1 = params[2]
-            self.k2 = params[3]
-        elif circuit == 'diffTF':
-            self.prodA = params[0]
-            self.prodB = params[1]
-            self.k1 = params[2]
-            self.k2 = params[3]
-            
-            self.A[0] = self.prodA * self.Tcc / 2
-            self.B[0] = self.prodB * self.Tcc / 2 
-            self.C[0] = self.prodA * self.Tcc / 2
-            self.D[0] = self.C[0] * self.k2 * self.Tcc
-            
-        elif circuit == 'cdg':
-            self.prodA = params[0]
-            self.prodB = params[1]
-            self.k1 = params[2]
-            self.k2 = params[3]
-            self.k3 = params[4]
-            self.k4 = params[5]
-            
-            self.A[0] = self.prodA * self.Tcc
-            self.B[0] = self.prodB * self.Tcc
-            self.C[0] = self.k3
-            self.D[0] = self.C[0] * self.k4 * self.Tcc
-            
-        else:
-            self.prodA = params[0]
-            self.k1 = params[1]
-            self.prodC = params[2]
-            self.k2 = params[3]
-            self.k3 = params[4]
-
+        parameterize_cell(self, circuit, params)
         self.sampleCycle()
-    
+
     def sampleCycle(self):
         growthRate = 1/self.divTime
         params = pack_params(self)
