@@ -448,29 +448,29 @@ def step_reaction(circuit, A, B, C, D, E, F, V, p, rng):
         else:
             F = F + 1
 
-    # --- 21. grid_relay (gridfunc.py else branch) ---
-    elif circuit == 'grid_relay':
-        r_prodB = k1 * A
-        r_prodD = k2 * B * C
-        r_prodE = k3 * D
-        Rtot = prodA + r_prodB + prodC + r_prodD + r_prodE
-        r1 = rng.random()
-        r2 = rng.random() * Rtot
-        tau = -math.log(r1) / Rtot
-        if r2 < prodA:
-            A = A + 1
-        elif r2 < prodA + r_prodB:
-            A = A - 1
-            B = B + 1
-        elif r2 < prodA + r_prodB + prodC:
-            C = C + 1
-        elif r2 < prodA + r_prodB + prodC + r_prodD:
-            A = A + 1
-            B = B - 1
-            C = C - 1
-            D = D + 1
-        else:
-            E = E + 1
+    # --- 21. grid_relay (gridfunc.py else branch; never reached by any script) ---
+    # elif circuit == 'grid_relay':
+    #     r_prodB = k1 * A
+    #     r_prodD = k2 * B * C
+    #     r_prodE = k3 * D
+    #     Rtot = prodA + r_prodB + prodC + r_prodD + r_prodE
+    #     r1 = rng.random()
+    #     r2 = rng.random() * Rtot
+    #     tau = -math.log(r1) / Rtot
+    #     if r2 < prodA:
+    #         A = A + 1
+    #     elif r2 < prodA + r_prodB:
+    #         A = A - 1
+    #         B = B + 1
+    #     elif r2 < prodA + r_prodB + prodC:
+    #         C = C + 1
+    #     elif r2 < prodA + r_prodB + prodC + r_prodD:
+    #         A = A + 1
+    #         B = B - 1
+    #         C = C - 1
+    #         D = D + 1
+    #     else:
+    #         E = E + 1
 
     # --- 22. tcs (motiffunc.py else branch) ---
     else:

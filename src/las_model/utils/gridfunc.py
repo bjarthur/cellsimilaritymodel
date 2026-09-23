@@ -688,11 +688,8 @@ class Cell:
     def sampleCycle(self):
         growthRate = 1/self.divTime
         params = pack_params(self)
-        circuit = self.circuit if self.circuit in (
-            'single', 'bind', 'prodsat', 'produnsat', 'cascade', 'proddeg', 'phos', 'diffTF', 'cdg'
-        ) else 'grid_relay'
         n, _, _, _, _, _, _, _, _, overflow = run_cycle_numba(
-            circuit,
+            self.circuit,
             to_scalar(self.A), to_scalar(self.B), to_scalar(self.C),
             to_scalar(self.D), to_scalar(self.E), 0.0,
             to_scalar(self.V), to_scalar(self.t),
@@ -739,11 +736,8 @@ class Cell:
     def runCycle(self):
         growthRate = 1/self.divTime
         params = pack_params(self)
-        circuit = self.circuit if self.circuit in (
-            'single', 'bind', 'prodsat', 'produnsat', 'cascade', 'proddeg', 'phos', 'diffTF', 'cdg'
-        ) else 'grid_relay'
         n, _, _, _, _, _, _, _, _, overflow = run_cycle_numba(
-            circuit,
+            self.circuit,
             to_scalar(self.A), to_scalar(self.B), to_scalar(self.C),
             to_scalar(self.D), to_scalar(self.E), 0.0,
             to_scalar(self.V), to_scalar(self.t),
@@ -756,7 +750,7 @@ class Cell:
             self.arrSize *= 2
             self._init_buffers()
             n, _, _, _, _, _, _, _, _, overflow = run_cycle_numba(
-                circuit,
+                self.circuit,
                 to_scalar(self.A), to_scalar(self.B), to_scalar(self.C),
                 to_scalar(self.D), to_scalar(self.E), 0.0,
                 to_scalar(self.V), to_scalar(self.t),
@@ -777,11 +771,8 @@ class Cell:
         
     def reaction(self,n,A_array,B_array,C_array,D_array,E_array):
         params = pack_params(self)
-        circuit = self.circuit if self.circuit in (
-            'single', 'bind', 'prodsat', 'produnsat', 'cascade', 'proddeg', 'phos', 'diffTF', 'cdg'
-        ) else 'grid_relay'
         A, B, C, D, E, _, tau = step_reaction(
-            circuit,
+            self.circuit,
             A_array[n], B_array[n], C_array[n], D_array[n], E_array[n], 0.0,
             self.V_array[n], params, getattr(self, 'rng', rng)
         )
