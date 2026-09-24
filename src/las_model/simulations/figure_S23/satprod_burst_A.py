@@ -1,7 +1,7 @@
 # Saturated Production: effect of bursting on LAS duration 
 from datetime import datetime 
 import numpy as np 
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_offspring_similarity_time
 from las_model.utils.output import save_experiment 
@@ -39,7 +39,7 @@ for condition, (circuit, params) in conditions.items():
     print(f"Simulating {condition} mother cell")
 
     # Initialize and run mother cell 
-    motherCell = mf.Cell(metadata['Tcc'], metadata['varTcc'], rng)
+    motherCell = Cell(metadata['Tcc'], metadata['varTcc'], rng)
     motherCell.parameterize(circuit, params)
     motherCell.equilibrate(metadata['nCells_equilibrium'])
     motherCell.run(metadata['nCells'])

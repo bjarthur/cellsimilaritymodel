@@ -1,7 +1,7 @@
 ﻿# Burst Size Sweep 
 from datetime import datetime 
 import numpy as np 
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.output import save_experiment 
 
@@ -45,7 +45,7 @@ for i in range(len(burstSizes)):
 
     print(f"Simulating burst size {burstSize} with prodA {prodA}")
 
-    motherCell = mf.Cell(metadata['Tcc'],0,rng)
+    motherCell = Cell(metadata['Tcc'],0,rng)
     motherCell.parameterize(metadata['circuit'],[prodA,kcatA,burstSize])
     motherCell.equilibrate(metadata['nCycles_equilibrium'])
 

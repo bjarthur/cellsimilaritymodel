@@ -4,7 +4,7 @@ import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime 
 import numpy as np
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_division_differences
 from las_model.utils.output import save_experiment 
@@ -31,7 +31,7 @@ def _simulate_single_tcc(task_args):
 
     print(f"Simulating for Tcc = {Tcc}")
 
-    motherCell = mf.Cell(Tcc, meta['varTcc'], task_rng)
+    motherCell = Cell(Tcc, meta['varTcc'], task_rng)
     motherCell.parameterize(meta['circuit'], [meta['PprodA'], meta['kcatA']])
     motherCell.equilibrate(meta['nCells_equilibrium'])
     motherCell.run(meta['nCells'])

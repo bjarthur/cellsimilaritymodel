@@ -1,7 +1,7 @@
 ﻿# Assymetric partitioning simulation 
 import numpy as np 
 from datetime import datetime 
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.output import save_experiment 
 
@@ -34,7 +34,7 @@ for bias in metadata['biases']:
 
     print(f"Simulating bias: {bias}")
 
-    motherCell = mf.Cell(metadata['Tcc'],metadata['Tcc_var'],rng)
+    motherCell = Cell(metadata['Tcc'],metadata['Tcc_var'],rng)
     motherCell.parameterize(metadata['circuit'],[metadata['PprodA']])
     motherCell.equilibrate(metadata['nCells_equilibrium'])
 

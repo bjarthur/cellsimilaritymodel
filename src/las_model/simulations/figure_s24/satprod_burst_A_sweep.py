@@ -1,7 +1,7 @@
 # Saturated Production: effect of burst size on LAS duration 
 from datetime import datetime 
 import numpy as np 
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_offspring_similarity_time
 from las_model.utils.output import save_experiment 
@@ -39,7 +39,7 @@ for burstSize in metadata['burstSizes']:
     print(f"Simulating for burst size = {burstSize}")
 
     # Bursts of burstSize molecules at PprodA / burstSize, so the mean production is the same for every burst size 
-    motherCell = mf.Cell(metadata['Tcc'], metadata['varTcc'], rng)
+    motherCell = Cell(metadata['Tcc'], metadata['varTcc'], rng)
     motherCell.parameterize(metadata['circuit'], [metadata['PprodA'] / burstSize, metadata['kcatA'], burstSize])
     motherCell.equilibrate(metadata['nCells_equilibrium'])
     motherCell.run(metadata['nCells'])

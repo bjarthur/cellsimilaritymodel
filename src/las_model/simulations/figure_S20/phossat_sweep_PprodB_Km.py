@@ -6,7 +6,7 @@ import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime 
 import numpy as np 
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_division_differences
 from las_model.utils.output import save_experiment 
@@ -37,7 +37,7 @@ def _simulate_single_pprodB_km(task_args):
 
     print(f"Running simulation for PprodB={PprodB}, Km={Km}")
 
-    motherCell = mf.Cell(meta['Tcc'], meta['varTcc'], task_rng)
+    motherCell = Cell(meta['Tcc'], meta['varTcc'], task_rng)
     motherCell.parameterize(
         meta['circuit'],
         [
