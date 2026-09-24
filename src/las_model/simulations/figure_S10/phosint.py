@@ -3,7 +3,7 @@
 # Phosphorylation with Intermediate: Sweep PprodA and PprodB 
 import numpy as np 
 from datetime import datetime 
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_division_differences
 from las_model.utils.output import save_experiment 
@@ -35,7 +35,7 @@ for i, PprodA in enumerate(metadata['PprodAs']):
 
         print(f"Running simulation for PprodA={PprodA}, PprodB={PprodB}")
 
-        motherCell = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
+        motherCell = Cell(metadata['Tcc'],metadata['varTcc'],rng)
         motherCell.parameterize(metadata['circuit'],[PprodA,PprodB,metadata['ka'],metadata['kb'],metadata['kt']])
         motherCell.equilibrate(metadata['nCells_equilibrium'])
         motherCell.run(metadata['nCells'])

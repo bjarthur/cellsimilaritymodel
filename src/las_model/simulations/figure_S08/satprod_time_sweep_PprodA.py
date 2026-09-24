@@ -3,7 +3,7 @@
 # Saturated Production: Dynamic, Sweep PprodA values
 from datetime import datetime 
 import numpy as np
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_offspring_similarity_time 
 from las_model.utils.output import save_experiment 
@@ -42,7 +42,7 @@ for PprodA in metadata['PprodAs']:
     print(f"Simulating for PprodA = {PprodA}")
 
     # Initialize and run Mother Cell
-    motherCell = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
+    motherCell = Cell(metadata['Tcc'],metadata['varTcc'],rng)
     motherCell.parameterize(metadata['circuit'],[PprodA,metadata['kcatA']])
     motherCell.equilibrate(metadata['nCells_equilibrium'])
     motherCell.run(metadata['nCells'])

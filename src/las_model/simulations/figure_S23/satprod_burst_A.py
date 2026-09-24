@@ -1,7 +1,7 @@
 # Sat prod effect of bursting on LAS duration experiment  
 import pickle
 import numpy as np 
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 
 # Pin random seed 
@@ -23,7 +23,7 @@ nCycles = 10
 # ================== Non-burst Cell ==========================
 
 # Initialize mother Cell 
-motherCell_no_burst = mf.Cell(Tcc,0)
+motherCell_no_burst = Cell(Tcc,0)
 motherCell_no_burst.parameterize(circuit,[prodA,kcatA])
 motherCell_no_burst.equilibrate(nCycles_equilibrate)
 
@@ -34,7 +34,7 @@ motherCell_no_burst.run(nCells)
 divStates_no_burst = motherCell_no_burst.getMotherStates()
 
 # ================== Bursting Cell ===========================
-motherCell_burst = mf.Cell(Tcc,0)
+motherCell_burst = Cell(Tcc,0)
 motherCell_burst.parameterize('prodsat_burst',[prodA_with_bursting,kcatA,burstSize])
 motherCell_burst.equilibrate(nCycles_equilibrate)
 
@@ -57,17 +57,17 @@ for i in range(nCells):
     sis2state = (divStates_no_burst[:,i] - sis1state).astype('int')
     rnd1state = rng.binomial(divStates_no_burst[:,rng.integers(0,nCells)].astype('int'),0.5)
     
-    sis1 = mf.Cell(Tcc,0)
+    sis1 = Cell(Tcc,0)
     sis1.inherit(motherCell_no_burst,sis1state)
     sis1.run(nCycles)
     molecules_no_burst[0,i] = sis1.molecules
 
-    sis2 = mf.Cell(Tcc,0)
+    sis2 = Cell(Tcc,0)
     sis2.inherit(motherCell_no_burst,sis2state)
     sis2.run(nCycles)
     molecules_no_burst[1,i] = sis2.molecules
 
-    rnd1 = mf.Cell(Tcc,0)
+    rnd1 = Cell(Tcc,0)
     rnd1.inherit(motherCell_no_burst,rnd1state)
     rnd1.run(nCycles)
     molecules_no_burst[2,i] = rnd1.molecules
@@ -77,17 +77,17 @@ for i in range(nCells):
     sis2state = (divStates_burst[:,i] - sis1state).astype('int')
     rnd1state = rng.binomial(divStates_burst[:,rng.integers(0,nCells)].astype('int'),0.5)
     
-    sis1 = mf.Cell(Tcc,0)
+    sis1 = Cell(Tcc,0)
     sis1.inherit(motherCell_burst,sis1state)
     sis1.run(nCycles)
     molecules_burst[0,i] = sis1.molecules
 
-    sis2 = mf.Cell(Tcc,0)
+    sis2 = Cell(Tcc,0)
     sis2.inherit(motherCell_burst,sis2state)
     sis2.run(nCycles)
     molecules_burst[1,i] = sis2.molecules
 
-    rnd1 = mf.Cell(Tcc,0)
+    rnd1 = Cell(Tcc,0)
     rnd1.inherit(motherCell_burst,rnd1state)
     rnd1.run(nCycles)
     molecules_burst[2,i] = rnd1.molecules

@@ -1,7 +1,7 @@
 # Sat prod effect of bursting on LAS duration experiment  
 import pickle
 import numpy as np 
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 
 # Pin random seed 
@@ -25,7 +25,7 @@ normvar = []
 
 # ======== Iterate over burst sizes and simulate mother cells ================
 for burstSize in burstSizes:
-    motherCell = mf.Cell(Tcc,0)
+    motherCell = Cell(Tcc,0)
     motherCell.parameterize('prodsat_burst',[prodA/burstSize,kcatA,burstSize])
     motherCell.equilibrate(nCycles_equilibrate)
 
@@ -46,17 +46,17 @@ for burstSize in burstSizes:
         sis2state = (divStates[:,i] - sis1state).astype('int')
         rnd1state = rng.binomial(divStates[:,rng.integers(0,nCells)].astype('int'),0.5)
         
-        sis1 = mf.Cell(Tcc,0)
+        sis1 = Cell(Tcc,0)
         sis1.inherit(motherCell,sis1state)
         sis1.run(nCycles)
         molecules[0,i] = sis1.molecules
 
-        sis2 = mf.Cell(Tcc,0)
+        sis2 = Cell(Tcc,0)
         sis2.inherit(motherCell,sis2state)
         sis2.run(nCycles)
         molecules[1,i] = sis2.molecules
 
-        rnd1 = mf.Cell(Tcc,0)
+        rnd1 = Cell(Tcc,0)
         rnd1.inherit(motherCell,rnd1state)
         rnd1.run(nCycles)
         molecules[2,i] = rnd1.molecules

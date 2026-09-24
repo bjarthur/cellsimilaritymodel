@@ -3,7 +3,7 @@
 # Two Component System Time Simulation  
 from datetime import datetime 
 import numpy as np
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_offspring_similarity_time
 from las_model.utils.output import save_experiment
@@ -41,7 +41,7 @@ results = {
 }
 
 # Initialize and run mother cell 
-motherCell = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
+motherCell = Cell(metadata['Tcc'],metadata['varTcc'],rng)
 motherCell.parameterize(metadata['circuit'],[metadata['PprodA'],metadata['PprodB'],metadata['ka'],metadata['kb'],metadata['kt'],metadata['k4']])
 motherCell.equilibrate(metadata['nCells_equilibrium'])
 motherCell.run(metadata['nCells'])

@@ -1,5 +1,5 @@
 """
-Shared parameterize function for the Cell classes in motiffunc.py and gridfunc.py.
+Parameterize function for utils.cell.Cell.
 
 Sets circuit rate constants and initial molecule counts on a Cell instance.
 """

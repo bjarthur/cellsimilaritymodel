@@ -2,7 +2,7 @@
 import numpy as np 
 from las_model.utils.analyze import calculate_division_differences
 from datetime import datetime
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.output import save_experiment
 
@@ -37,7 +37,7 @@ for varTcc in metadata['varTccs']:
 
     print(f"Simulating for varTcc: {varTcc}")
 
-    motherCell = mf.Cell(metadata['Tcc'],varTcc,rng)
+    motherCell = Cell(metadata['Tcc'],varTcc,rng)
     motherCell.parameterize(metadata['circuit'],[metadata['PprodA']])
     motherCell.equilibrate(metadata['nCells_equilibrium'])
 

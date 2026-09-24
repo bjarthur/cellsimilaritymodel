@@ -3,7 +3,7 @@
 # Unsaturated production sweep substrate production rate 
 from datetime import datetime 
 import numpy as np
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_division_differences
 from las_model.utils.output import save_experiment 
@@ -45,7 +45,7 @@ for PprodB in metadata['PprodBs']:
     print(f"Running simulation for PprodB={PprodB}")
 
     # Initialize and run mother cell 
-    motherCell = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
+    motherCell = Cell(metadata['Tcc'],metadata['varTcc'],rng)
     motherCell.parameterize(metadata['circuit'],[PprodB,metadata['PprodA'],metadata['kcatA'],metadata['Km']])
     motherCell.equilibrate(metadata['nCells_equilibrium'])
     motherCell.run(metadata['nCells'])

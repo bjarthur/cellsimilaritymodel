@@ -3,7 +3,7 @@
 # Cascade 5 Time Sweep
 import numpy as np 
 from datetime import datetime 
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_offspring_similarity_time 
 from las_model.utils.output import save_experiment 
@@ -32,7 +32,7 @@ metadata = {
 rng = np.random.default_rng(seed=metadata['seed'])
 
 # Initialize and run mother cell 
-motherCell = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
+motherCell = Cell(metadata['Tcc'],metadata['varTcc'],rng)
 motherCell.parameterize(metadata['circuit'],[metadata['PprodA'],metadata['kcatA'],metadata['kcatB'],metadata['kcatC'],metadata['kcatD'],metadata['kcatE']])
 motherCell.equilibrate(metadata['nCells_equilibrium'])
 motherCell.run(metadata['nCells'])
@@ -71,7 +71,7 @@ print(f"Experiment saved to f{exp_dir}")
 # kcatE = 0
 # Tcc = 1000
 
-# motherCell = mf.Cell(Tcc,0)
+# motherCell = Cell(Tcc,0)
 # motherCell.parameterize('cascade6',[PprodA,kcatA,kcatB,kcatC,kcatD,kcatE])
 # motherCell.equilibrate()
 # motherCell.run(nCells)
@@ -103,17 +103,17 @@ print(f"Experiment saved to f{exp_dir}")
 #     sis2state = divStates[:,k] - sis1state
 #     rnd1state = rng.binomial(divStates[:,rng.integers(0,nCells)].astype('int'),0.5)
     
-#     sis1 = mf.Cell(Tcc,0)
+#     sis1 = Cell(Tcc,0)
 #     sis1.inherit(motherCell,sis1state)
 #     sis1.run(nCycles)
 #     concentrations[0,k] = sis1.getMolecules()
     
-#     sis2 = mf.Cell(Tcc,0)
+#     sis2 = Cell(Tcc,0)
 #     sis2.inherit(motherCell,sis2state)
 #     sis2.run(nCycles)
 #     concentrations[1,k] = sis2.getMolecules()
     
-#     rnd1 = mf.Cell(Tcc,0)
+#     rnd1 = Cell(Tcc,0)
 #     rnd1.inherit(motherCell,rnd1state)
 #     rnd1.run(nCycles)
 #     concentrations[2,k] = rnd1.getMolecules()

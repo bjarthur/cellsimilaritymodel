@@ -4,7 +4,7 @@ import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime 
 import numpy as np
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_offspring_similarity_time
 from las_model.utils.output import save_experiment 
@@ -43,7 +43,7 @@ def _simulate_single_kcat(task_args):
 
     print(f"Simulating for kcatA = {kcatA}")
 
-    motherCell = mf.Cell(meta['Tcc'], meta['varTcc'], task_rng)
+    motherCell = Cell(meta['Tcc'], meta['varTcc'], task_rng)
     motherCell.parameterize(
         meta['circuit'],
         [meta['PprodA'], meta['PprodB'], kcatA, kcatB, K_M]

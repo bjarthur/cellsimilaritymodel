@@ -3,7 +3,7 @@
 # Reversible Binding: Sweep PprodA and PprodB
 import numpy as np 
 from datetime import datetime 
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_division_differences
 from las_model.utils.output import save_experiment 
@@ -34,7 +34,7 @@ for i, PprodA in enumerate(metadata['PprodAs']):
 
         print(f"Running simulation for PprodA={PprodA}, PprodB={PprodB}")
 
-        motherCell = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
+        motherCell = Cell(metadata['Tcc'],metadata['varTcc'],rng)
         motherCell.parameterize(metadata['circuit'],[PprodA,PprodB,metadata['k1'],metadata['k2']])
         motherCell.equilibrate(metadata['nCells_equilibrium'])
         motherCell.run(metadata['nCells'])
@@ -93,7 +93,7 @@ print(f"Experiment saved to f{exp_dir}")
 # k1 = 10**-3
 # k2 = 10**-5
 
-# motherCell = mf.Cell(Tcc,0)
+# motherCell = Cell(Tcc,0)
 # motherCell.parameterize('revbind',[prodA,prodB,k1,k2])
 # motherCell.run(nCells)
 

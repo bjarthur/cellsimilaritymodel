@@ -2,7 +2,7 @@
 Numba-accelerated Gillespie stochastic simulation algorithm kernels.
 
 Provides JIT-compiled functions for running reaction steps and cell cycles
-across all circuit motifs in motiffunc.py and gridfunc.py at native machine speed.
+across all circuit motifs in cell.py at native machine speed.
 """
 
 import math

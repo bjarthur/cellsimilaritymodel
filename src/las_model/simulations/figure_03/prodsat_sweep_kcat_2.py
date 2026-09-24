@@ -1,7 +1,7 @@
 ﻿# Saturated Production: Sweep kcatA (high)
 from datetime import datetime 
 import numpy as np
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_division_differences
 from las_model.utils.output import save_experiment 
@@ -38,7 +38,7 @@ for kcatA in metadata['kcats']:
 
     print(f"Simulating for kcatA = {kcatA}")
 
-    motherCell = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
+    motherCell = Cell(metadata['Tcc'],metadata['varTcc'],rng)
     motherCell.parameterize(metadata['circuit'],[metadata['PprodA'],kcatA])
     motherCell.equilibrate(metadata['nCells_equilibrium'])
 

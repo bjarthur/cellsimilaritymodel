@@ -1,7 +1,7 @@
 ﻿# Diffusible Ligand Time simulation 
 from datetime import datetime 
 import numpy as np
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_offspring_similarity_time
 from las_model.utils.output import save_experiment
@@ -37,7 +37,7 @@ results = {
 }
 
 # Intialize Mother cell and run simulation 
-motherCell = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
+motherCell = Cell(metadata['Tcc'],metadata['varTcc'],rng)
 motherCell.parameterize('diffTF',[metadata['PprodA'],metadata['PprodB'],metadata['kbind'],metadata['kprod']])
 motherCell.equilibrate(metadata['nCells_equilibrium'])
 motherCell.run(metadata['nCells'])

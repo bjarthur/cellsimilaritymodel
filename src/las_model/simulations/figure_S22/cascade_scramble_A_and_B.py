@@ -1,7 +1,7 @@
 # Sat prod scrambled A experiment
 import pickle
 import numpy as np 
-from las_model.utils import motiffunc as mf
+from las_model.utils.cell import Cell
 from las_model.utils.config import PROJECT_DIR
 
 # Pin random seed 
@@ -23,7 +23,7 @@ motherCells = []
 divStates = np.zeros([6,nCells])
 
 # Initialize mother Cell 
-motherCell = mf.Cell(Tcc,0)
+motherCell = Cell(Tcc,0)
 motherCell.parameterize(circuit,[prodA,kcatA,kcatB])
 motherCell.equilibrate(10)
 
@@ -50,17 +50,17 @@ for i in range(nCells):
     #       random cell 1 is [A: {rnd1state[0]}, B: {rnd1state[1]}]
     #       """)
 
-    sis1 = mf.Cell(Tcc,0)
+    sis1 = Cell(Tcc,0)
     sis1.inherit(motherCell,sis1state)
     sis1.run(nCycles)
     molecules_inherited[0,i] = sis1.molecules
 
-    sis2 = mf.Cell(Tcc,0)
+    sis2 = Cell(Tcc,0)
     sis2.inherit(motherCell,sis2state)
     sis2.run(nCycles)
     molecules_inherited[1,i] = sis2.molecules
 
-    rnd1 = mf.Cell(Tcc,0)
+    rnd1 = Cell(Tcc,0)
     rnd1.inherit(motherCell,rnd1state)
     rnd1.run(nCycles)
     molecules_inherited[2,i] = rnd1.molecules
@@ -82,12 +82,12 @@ for i in range(nCells):
 # New A is from mother cell {newMother_1} and is {newA_1}
 # """)
     
-    sis1_new = mf.Cell(Tcc,0)
+    sis1_new = Cell(Tcc,0)
     sis1_new.inherit(motherCell,sis1state_new)
     sis1_new.run(nCycles)
     molecules_scrambled[0,i] = sis1_new.molecules
 
-    sis2_new = mf.Cell(Tcc,0)
+    sis2_new = Cell(Tcc,0)
     sis2_new.inherit(motherCell,sis2state_new)
     sis2_new.run(nCycles)
     molecules_scrambled[1,i] = sis2_new.molecules
