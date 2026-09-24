@@ -1,63 +1,79 @@
-﻿# Analyze Spatial simluation data 
-import os
+# 3 Step Cascade Spatial Simulation: relatedness, cousin maps, concentration maps, Moran's I
 import pickle
+from datetime import datetime 
 import numpy as np
 from las_model.utils.config import PROJECT_DIR
+from las_model.utils.output import save_experiment
 
-# import grid data 
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2.pickle','rb') as f:
+# Experiment metadata
+metadata = {
+    'experiment_name': 'cascade_spatial_analyze',
+    'experiment_directory': 'cascade',
+    'created': datetime.now().isoformat(),
+    'source_experiment': 'cascade_spatial',
+    'moranI_experiment': 'cascade_spatial_moranI',
+    'maxRadius': 9,
+    'relatedness_t': 10000,
+    'crop': [25,75],
+    'cousinCell': 100,
+    'cousin_ts': [2000,4000,6000,8000,10000],
+    'cousinCells_all': [100,200,300,400,500],
+    'cousin_ts_all': [0,2000,4000,6000,8000,10000],
+    'molecules': ['A','B','C'],
+    'mol_ts': [4000,6000,8000,10000],
+    'moranI_shape': 'discdist',
+    'moranI_radii': list(range(1,10)),
+}
+
+base_dir = PROJECT_DIR / metadata['experiment_directory']
+crop = slice(metadata['crop'][0],metadata['crop'][1])
+
+# Load grid from the spatial simulation 
+with open(base_dir / metadata['source_experiment'] / f"{metadata['source_experiment']}.pickle",'rb') as f:
     grid = pickle.load(f)
 
-# compute relatedness curve 
-maxRadius = 9
-relatedness = grid.calcCollectiveLocalRelatedness(maxRadius, 10000)
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_relatedness.pickle','wb') as f:
-    pickle.dump(relatedness,f,pickle.HIGHEST_PROTOCOL)
+# Collect Moran's I across neighborhood sizes (cheap; fail early if any run is missing)
+morIs = []
+for r in metadata['moranI_radii']:
+    name = f"{metadata['moranI_experiment']}_{metadata['moranI_shape']}_r{r}"
+    with open(base_dir / name / f'{name}.pickle','rb') as f:
+        morIs.append(pickle.load(f))
+morIs = np.stack(morIs,axis=0)
 
-# pull cousin maps 
-crop = [25,75]
-ts = [2000,4000,6000,8000,10000]
-imgs = []
-for i in range(len(ts)):
-    imgs.append(8-grid.cousinMap(100,ts[i])[crop[0]:crop[1],crop[0]:crop[1]])
-    imgs[i][np.where(imgs[i]==10)] = 'NaN'
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_cousinmaps.pickle','wb') as f:
-    pickle.dump(imgs,f,pickle.HIGHEST_PROTOCOL)
+# Compute relatedness curve 
+relatedness = grid.calcCollectiveLocalRelatedness(metadata['maxRadius'],metadata['relatedness_t'])
 
-cousinNums = [100,200,300,400,500]
-ts = [0,2000,4000,6000,8000,10000]
-imgs = []
-for j in range(len(cousinNums)):
-    onecousinimgs = []
-    for i in range(len(ts)):
-        onecousinimgs.append(8-grid.cousinMap(cousinNums[j],ts[i])[crop[0]:crop[1],crop[0]:crop[1]])
-        onecousinimgs[i][np.where(onecousinimgs[i]==10)] = 'NaN'
-    imgs.append(onecousinimgs)
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_cousinmaps_all.pickle','wb') as f:
-    pickle.dump(imgs,f,pickle.HIGHEST_PROTOCOL)
+# Pull cousin maps 
+def cousinMap(cellNum,t):
+    img = 8-grid.cousinMap(cellNum,t)[crop,crop]
+    img[np.where(img==10)] = 'NaN'
+    return img
 
-# get molecular concentration maps 
-molAImgs = []
-molBImgs = []
-molCImgs = []
-molTimes = [4000,6000,8000,10000]
-for i in range(len(molTimes)):
-    molAImgs.append(grid.getFrame(molTimes[i],'A')[crop[0]:crop[1],crop[0]:crop[1]])
-    molBImgs.append(grid.getFrame(molTimes[i],'B')[crop[0]:crop[1],crop[0]:crop[1]])
-    molCImgs.append(grid.getFrame(molTimes[i],'C')[crop[0]:crop[1],crop[0]:crop[1]])
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_molConcMaps.pickle','wb') as f:
-    pickle.dump([molAImgs,molBImgs,molCImgs],f,pickle.HIGHEST_PROTOCOL)
+cousinmaps = []
+for t in metadata['cousin_ts']:
+    cousinmaps.append(cousinMap(metadata['cousinCell'],t))
 
-# get Moran Is
-morIs_discdist = np.zeros([9,5,101])
-filenames = []
-for file in os.listdir(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_moranIs'):
-    if 'cascade_10gen2_morIs_discdist_r' in file:
-        filenames.append(file)
+cousinmaps_all = []
+for cellNum in metadata['cousinCells_all']:
+    cousinmaps_all.append([cousinMap(cellNum,t) for t in metadata['cousin_ts_all']])
 
-for i in range(1,len(filenames)):
-    with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_moranIs' / filenames[i],'rb') as f:
-        morIs_discdist[i-1] = pickle.load(f)
-        
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen_moranIs2.pickle','wb') as f:
-    pickle.dump(morIs_discdist,f,pickle.HIGHEST_PROTOCOL)
+# Pull molecular concentration maps 
+molConcMaps = []
+for molecule in metadata['molecules']:
+    molConcMaps.append([grid.getFrame(t,molecule)[crop,crop] for t in metadata['mol_ts']])
+
+# Save results 
+results = {
+    'relatedness': relatedness,
+    'cousinmaps': cousinmaps,
+    'cousinmaps_all': cousinmaps_all,
+    'molConcMaps': molConcMaps,
+    'moranIs': morIs,
+}
+exp_dir = save_experiment(
+    experiment_name=metadata['experiment_name'],
+    data=results,
+    metadata=metadata,
+    base_dir=base_dir
+)
+print(f"Experiment saved to {exp_dir}")
