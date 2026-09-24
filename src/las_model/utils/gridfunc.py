@@ -3,28 +3,30 @@
 import numpy as np
 import matplotlib.animation as animation
 from matplotlib import pyplot as plt 
-import copy, cv2, cmapy
+import cv2, cmapy
 from datetime import datetime
 from scipy import stats 
 import math
-from las_model.utils.gillespie_numba import run_cycle_numba, pack_params, to_scalar, step_reaction
-from las_model.utils.parameterize import parameterize_cell
-
-rng = np.random.default_rng(seed=1000)
+from las_model.utils.cell import Cell
 
 class Grid:
-    def __init__(self,ysize,xsize,maxCells):
+    def __init__(self,ysize,xsize,maxCells,rng=None):
         self.xsize = xsize
         self.ysize = ysize
         self.maxCells = maxCells
+        self.rng = rng if rng is not None else np.random.default_rng(seed=1000)
         self.timepoints = np.zeros(maxCells)
         self.data = np.zeros([maxCells,ysize,xsize])
         self.Cells = []
         
     def seed(self,circuit,params,Tcc,varTcc):
-        starterCell = Cell(1,self.ysize//2,self.xsize//2,Tcc,varTcc,0)
+        starterCell = Cell(Tcc,varTcc,self.rng)
         starterCell.parameterize(circuit,params)
+        starterCell.sampleCycle()
+        starterCell.ID = 1
+        starterCell.yloc, starterCell.xloc = self.ysize//2, self.xsize//2
         starterCell.lineage = [starterCell.ID]
+        starterCell.lineageDivTimes = []
         starterCell.runCycle()
         self.data[0,starterCell.yloc,starterCell.xloc] = starterCell.ID
         self.Cells.append(starterCell)
@@ -61,16 +63,21 @@ class Grid:
                 if self.data[i,repLoc[0],repLoc[1]] != 0:
                     self.moveCells(repDir,motherCell,i)
                 
-                # replicate cell 
-                daughterCell = Cell(len(self.Cells)+1,repLoc[0],repLoc[1],motherCell.Tcc,motherCell.varTcc,divTime)
-                daughterCell.inherit(motherCell)
+                # replicate cell: split the mother's end-of-cycle counts between mother and daughter 
+                daughterState = motherCell.partition()
+                motherCell.t = divTime
+                daughterCell = Cell(motherCell.Tcc,motherCell.varTcc,self.rng,t0=divTime)
+                daughterCell.inherit(motherCell,daughterState)
+                daughterCell.ID = len(self.Cells)+1
+                daughterCell.yloc, daughterCell.xloc = repLoc
+                daughterCell.lineage = motherCell.lineage + [daughterCell.ID]
+                daughterCell.lineageDivTimes = motherCell.lineageDivTimes + [divTime]
+                motherCell.lineage.append(motherCell.ID)
+                motherCell.lineageDivTimes.append(divTime)
                 
-                # update daughter cell 
-                daughterCell.updateLineage()
-                daughterCell.cellCycle()
-                
-                motherCell.updateLineage()
-                motherCell.cellCycle()
+                # run both cells' next cycles so their next division times are known 
+                daughterCell.runCycle()
+                motherCell.runCycle()
                 
                 self.data[i,daughterCell.yloc,daughterCell.xloc] = daughterCell.ID
                 self.Cells.append(daughterCell)
@@ -112,7 +119,7 @@ class Grid:
         
         neighborCousinNums = np.zeros(len(neighborCells))
         for i in range(len(neighborCousinNums)):
-            neighborCousinNums[i] = self.Cells[cellNum-1].calcCousinNum(self.Cells[int(neighborCells[i]-1)],timepoint)
+            neighborCousinNums[i] = self.cousinNum(self.Cells[cellNum-1],self.Cells[int(neighborCells[i]-1)],timepoint)
     
         return np.mean(neighborCousinNums)
     
@@ -135,6 +142,20 @@ class Grid:
     def calcDistance(self,loc1,loc2):
         return np.sqrt((loc1[0]-loc2[0])**2 + (loc1[1]-loc2[1])**2)
 
+    def cousinNum(self,cell,otherCell,timepoint):
+        # determine which generation to check based on timepoint 
+        gen = 0
+        while gen < len(cell.lineageDivTimes) and cell.lineageDivTimes[gen] < timepoint:
+            gen += 1
+        
+        if cell.lineage[gen] == otherCell.lineage[gen]:
+            return -1
+        else:
+            i = 0
+            while cell.lineage[i] == otherCell.lineage[i] and i < len(cell.lineage)-1:
+                i += 1
+            return gen - i
+
     def cousinMap(self,cellNum,frame):
         cousinMap = np.zeros_like(self.data[-1])
         
@@ -143,7 +164,7 @@ class Grid:
         for i in range(len(cousinMap)):
             for j in range(len(cousinMap[i])):
                 if self.data[dataIndex,i,j] != 0:
-                    cousinMap[i,j] = self.Cells[cellNum-1].calcCousinNum(self.Cells[int(self.data[dataIndex,i,j])-1],frame)
+                    cousinMap[i,j] = self.cousinNum(self.Cells[cellNum-1],self.Cells[int(self.data[dataIndex,i,j])-1],frame)
                 else:
                     cousinMap[i,j] = -2   
         return cousinMap                                                                   
@@ -171,17 +192,7 @@ class Grid:
         vid = cv2.VideoWriter(filePrefix + '_' + molecule + '_vid.avi',cv2.VideoWriter_fourcc(*'MJPG'),500/downSample,(self.ysize*scale,self.xsize*scale),1)
         
         # scale video
-        cell0vals = []
-        if molecule == 'A':
-            cell0vals = self.Cells[0].A/self.Cells[0].V
-        elif molecule == 'B':
-            cell0vals = self.Cells[0].B/self.Cells[0].V
-        elif molecule == 'C':
-            cell0vals = self.Cells[0].C/self.Cells[0].V
-        elif molecule == 'D':
-            cell0vals = self.Cells[0].D/self.Cells[0].V
-        else:
-            cell0vals = self.Cells[0].E/self.Cells[0].V
+        cell0vals = self.Cells[0].molecules['ABCDEF'.index(molecule)]
         vmin = np.min(cell0vals)
         vmax = np.max(cell0vals)
         
@@ -208,8 +219,8 @@ class Grid:
         vid = cv2.VideoWriter(filePrefix + '_Avid.avi',cv2.VideoWriter_fourcc(*'MJPG'),1000/downSample,(self.ysize*scale,self.xsize*scale),1)
         
         # scale video 
-        vmin = np.mean(self.Cells[0].A/self.Cells[0].V) - 5 * np.std(self.Cells[0].A/self.Cells[0].V)
-        vmax = np.mean(self.Cells[0].A/self.Cells[0].V) + 5 * np.std(self.Cells[0].A/self.Cells[0].V)
+        vmin = np.mean(self.Cells[0].molecules[0]) - 5 * np.std(self.Cells[0].molecules[0])
+        vmax = np.mean(self.Cells[0].molecules[0]) + 5 * np.std(self.Cells[0].molecules[0])
         
         for i in range(0,int(self.timepoints[-1]),downSample):
             
@@ -235,8 +246,8 @@ class Grid:
         vid = cv2.VideoWriter(filePrefix + '_Bvid.avi',cv2.VideoWriter_fourcc(*'MJPG'),1000/downSample,(self.ysize*scale,self.xsize*scale),1)
         
         # scale video 
-        vmin = np.mean(self.Cells[0].B/self.Cells[0].V) - 5 * np.std(self.Cells[0].B/self.Cells[0].V)
-        vmax = np.mean(self.Cells[0].B/self.Cells[0].V) + 5 * np.std(self.Cells[0].B/self.Cells[0].V)
+        vmin = np.mean(self.Cells[0].molecules[1]) - 5 * np.std(self.Cells[0].molecules[1])
+        vmax = np.mean(self.Cells[0].molecules[1]) + 5 * np.std(self.Cells[0].molecules[1])
         
         for i in range(0,int(self.timepoints[-1]),downSample):
             
@@ -262,8 +273,8 @@ class Grid:
         vid = cv2.VideoWriter(filePrefix + '_Cvid.avi',cv2.VideoWriter_fourcc(*'MJPG'),1000/downSample,(self.ysize*scale,self.xsize*scale),1)
         
         # scale video 
-        vmin = np.mean(self.Cells[0].C/self.Cells[0].V) - 5 * np.std(self.Cells[0].C/self.Cells[0].V)
-        vmax = np.mean(self.Cells[0].C/self.Cells[0].V) + 5 * np.std(self.Cells[0].C/self.Cells[0].V)
+        vmin = np.mean(self.Cells[0].molecules[2]) - 5 * np.std(self.Cells[0].molecules[2])
+        vmax = np.mean(self.Cells[0].molecules[2]) + 5 * np.std(self.Cells[0].molecules[2])
         
         for i in range(0,int(self.timepoints[-1]),downSample):
             
@@ -405,7 +416,7 @@ class Grid:
         minDirs = np.where(dirCells==np.min(dirCells))[0]
         
         # return random minimum value
-        return minDirs[rng.integers(len(minDirs))]
+        return minDirs[self.rng.integers(len(minDirs))]
                 
     def getRepLoc(self,motherCell,repDir):
         
@@ -429,27 +440,12 @@ class Grid:
         dataIndex = np.where(self.timepoints - t > 0)[0][0]-1
         cellNums = self.data[dataIndex][np.nonzero(self.data[dataIndex])]
         
-        # for each cell, assign pixel value to concentration of M at nearest timepoint 
+        # for each cell, assign pixel value to concentration of M at nearest sampled timepoint 
+        m = 'ABCDEF'.index(molecule)
         for j in range(len(cellNums)):
             cell = self.Cells[int(cellNums[j]-1)]
-            
-            # find nearest timepoint 
-            t_index = np.argmin(abs(t-cell.t))
-            
-            # get correct molecule
-            if molecule == 'A':
-                amt = cell.A[t_index]
-            elif molecule == 'B':
-                amt = cell.B[t_index]
-            elif molecule == 'C':
-                amt = cell.C[t_index]
-            elif molecule == 'D':
-                amt = cell.D[t_index]
-            else:
-                amt = cell.E[t_index]
-            
-            # assign pixel value to M concentration 
-            frame[np.where(self.data[dataIndex]==cellNums[j])] = amt/cell.V[t_index]
+            t_index = np.argmin(abs(t-cell.sampleTimes))
+            frame[np.where(self.data[dataIndex]==cellNums[j])] = cell.molecules[m,t_index]
     
         return frame
     
@@ -546,205 +542,4 @@ class Grid:
             ax.set_xticks([])
             ax.set_yticks([])
             ani = animation.FuncAnimation(fig, self.nextFrame, frames=range(self.maxCells),repeat=0,interval=1000/20)
-            return ani 
-    
-        
-class Cell:
-    def __init__(self,number,yloc,xloc,Tcc,varTcc,t):
-        self.ID = number
-        self.yloc = yloc
-        self.xloc = xloc
-        self.Tcc = Tcc
-        self.varTcc = varTcc
-        self.divTime = int(rng.normal(self.Tcc,self.varTcc))
-        self.divTimes = np.array([self.divTime]) + t
-        self.lineage = []
-        self.prodA = 0
-        self.prodB = 0
-        self.prodC = 0
-        self.k1 = 0
-        self.k2 = 0 
-        self.k3 = 0
-        self.k4 = 0
-        self.arrSize = int(1e9)
-        self.t = np.array([0])
-        self.V = np.array([1])
-        self.A = np.array([0])
-        self.B = np.array([0])
-        self.C = np.array([0])
-        self.D = np.array([0])
-        self.E = np.array([0])
-        self._init_buffers()
-
-    def _init_buffers(self):
-        self.t_array = np.empty(self.arrSize)
-        self.V_array = np.empty(self.arrSize)
-        self.A_array = np.empty(self.arrSize)
-        self.B_array = np.empty(self.arrSize)
-        self.C_array = np.empty(self.arrSize)
-        self.D_array = np.empty(self.arrSize)
-        self.E_array = np.empty(self.arrSize)
-        self.F_array = np.empty(self.arrSize)
-
-    def __getstate__(self):
-        """Exclude pre-allocated buffer arrays from being pickled."""
-        state = self.__dict__.copy()
-        buffers = ['t_array', 'V_array', 'A_array', 'B_array', 'C_array', 'D_array', 'E_array', 'F_array']
-        for key in buffers:
-            state.pop(key, None)
-        return state
-
-    #def __setstate__(self, state):
-    #    """Restore instance state and re-initialize buffer arrays when loaded."""
-    #    self.__dict__.update(state)
-    #    self._init_buffers()  # Omit this line if buffers are not needed after unpickling
-    
-    def parameterize(self,circuit,params):
-        self.circuit = circuit
-        parameterize_cell(self, circuit, params)
-        self.sampleCycle()
-
-    def sampleCycle(self):
-        growthRate = 1/self.divTime
-        params = pack_params(self)
-        n, _, _, _, _, _, _, _, _, overflow = run_cycle_numba(
-            self.circuit,
-            to_scalar(self.A), to_scalar(self.B), to_scalar(self.C),
-            to_scalar(self.D), to_scalar(self.E), 0.0,
-            to_scalar(self.V), to_scalar(self.t),
-            growthRate, params, getattr(self, 'rng', rng),
-            self.t_array, self.V_array, self.A_array, self.B_array,
-            self.C_array, self.D_array, self.E_array, self.F_array,
-            len(self.t_array)
-        )
-        self.arrSize = int(n * 20)
-        self._init_buffers()
-    
-    def cellCycle(self,partition='binomial'):
-        self.runCycle()
-        
-        self.t = np.concatenate((self.t,np.array([self.divTimes[-1]])))
-        self.updateDivTimes()
-        
-        if partition == 'binomial':
-            self.V = np.concatenate((self.V,np.array([1])))
-            self.A = np.concatenate((self.A,np.array([rng.binomial(self.A[-1],0.5)])))
-            self.B = np.concatenate((self.B,np.array([rng.binomial(self.B[-1],0.5)])))
-            self.C = np.concatenate((self.C,np.array([rng.binomial(self.C[-1],0.5)])))
-            self.D = np.concatenate((self.D,np.array([rng.binomial(self.D[-1],0.5)])))
-            self.E = np.concatenate((self.E,np.array([rng.binomial(self.E[-1],0.5)])))
-        elif partition == 'perfect':
-            self.V = np.concatenate((self.V,np.array([1])))
-            self.A = np.concatenate((self.A,np.array([self.A[-1]//2])))
-            self.B = np.concatenate((self.B,np.array([self.B[-1]//2])))
-            self.C = np.concatenate((self.C,np.array([self.C[-1]//2])))
-            self.D = np.concatenate((self.D,np.array([self.D[-1]//2])))
-            self.E = np.concatenate((self.E,np.array([self.E[-1]//2])))
-        elif partition == 'correlated':
-            coef = rng.normal(0.5,0.1)
-            self.V = np.concatenate((self.V,np.array([1])))
-            self.A = np.concatenate((self.A,np.array([int(self.A[-1]*coef)])))
-            self.B = np.concatenate((self.B,np.array([int(self.B[-1]*coef)])))
-            self.C = np.concatenate((self.C,np.array([int(self.C[-1]*coef)])))
-            self.D = np.concatenate((self.D,np.array([int(self.D[-1]*coef)])))
-            self.E = np.concatenate((self.E,np.array([int(self.E[-1]*coef)])))
-        else:
-            print('invalid partition')
-            return
-    
-    def runCycle(self):
-        growthRate = 1/self.divTime
-        params = pack_params(self)
-        n, _, _, _, _, _, _, _, _, overflow = run_cycle_numba(
-            self.circuit,
-            to_scalar(self.A), to_scalar(self.B), to_scalar(self.C),
-            to_scalar(self.D), to_scalar(self.E), 0.0,
-            to_scalar(self.V), to_scalar(self.t),
-            growthRate, params, getattr(self, 'rng', rng),
-            self.t_array, self.V_array, self.A_array, self.B_array,
-            self.C_array, self.D_array, self.E_array, self.F_array,
-            len(self.t_array)
-        )
-        while overflow:
-            self.arrSize *= 2
-            self._init_buffers()
-            n, _, _, _, _, _, _, _, _, overflow = run_cycle_numba(
-                self.circuit,
-                to_scalar(self.A), to_scalar(self.B), to_scalar(self.C),
-                to_scalar(self.D), to_scalar(self.E), 0.0,
-                to_scalar(self.V), to_scalar(self.t),
-                growthRate, params, getattr(self, 'rng', rng),
-                self.t_array, self.V_array, self.A_array, self.B_array,
-                self.C_array, self.D_array, self.E_array, self.F_array,
-                len(self.t_array)
-            )
-
-        # trim arrays
-        self.t = np.concatenate((self.t,self.t_array[1:n]))
-        self.V = np.concatenate((self.V,self.V_array[1:n]))
-        self.A = np.concatenate((self.A,self.A_array[1:n]))
-        self.B = np.concatenate((self.B,self.B_array[1:n]))
-        self.C = np.concatenate((self.C,self.C_array[1:n]))
-        self.D = np.concatenate((self.D,self.D_array[1:n]))
-        self.E = np.concatenate((self.E,self.E_array[1:n]))
-        
-    def reaction(self,n,A_array,B_array,C_array,D_array,E_array):
-        params = pack_params(self)
-        A, B, C, D, E, _, tau = step_reaction(
-            self.circuit,
-            A_array[n], B_array[n], C_array[n], D_array[n], E_array[n], 0.0,
-            self.V_array[n], params, getattr(self, 'rng', rng)
-        )
-        A_array[n] = A
-        B_array[n] = B
-        C_array[n] = C
-        D_array[n] = D
-        E_array[n] = E
-        return A_array, B_array, C_array, D_array, E_array, tau
-    
-    def updateDivTimes(self):
-        self.divTime = int(rng.normal(self.Tcc,self.varTcc))
-        self.divTimes = np.concatenate((self.divTimes,np.array([self.divTimes[-1] + self.divTime])))
-        
-    def updateLineage(self):
-        self.lineage.append(self.ID)
-    
-    def inherit(self,motherCell):
-        self.lineage = copy.copy(motherCell.lineage)
-        self.divTimes = copy.copy(motherCell.divTimes)
-        self.circuit = motherCell.circuit
-        if self.arrSize != motherCell.arrSize:
-            self.arrSize = motherCell.arrSize
-            self._init_buffers()
-        self.prodA = motherCell.prodA
-        self.prodB = motherCell.prodB
-        self.prodC = motherCell.prodC
-        self.k1 = motherCell.k1
-        self.k2 = motherCell.k2
-        self.k3 = motherCell.k3
-        self.k4 = motherCell.k4 
-        self.t = copy.copy(motherCell.t)
-        self.V = copy.copy(motherCell.V)
-        self.A = copy.copy(motherCell.A)
-        self.B = copy.copy(motherCell.B)
-        self.C = copy.copy(motherCell.C)
-        self.D = copy.copy(motherCell.D)
-        self.E = copy.copy(motherCell.E)
-    
-    def calcCousinNum(self,otherCell,timepoint):
-        # print('comparing cell %i and cell %i' % (self.ID,otherCell.ID))
-        
-        # determine which generation to check based on timepoint 
-        gen = 0
-        while self.divTimes[gen] < timepoint:
-            gen += 1
-        
-        if self.lineage[gen] == otherCell.lineage[gen]:
-            return -1
-        else:
-            i = 0
-            while self.lineage[i] == otherCell.lineage[i] and i < len(self.lineage)-1:
-                # print('gen %i are the same' % i)
-                i += 1
-            
-            return gen - i
+            return ani

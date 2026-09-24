@@ -21,11 +21,11 @@ metadata = {
     'kcatB': 10**-2,
 }
 
-# Pin random seed (gridfunc draws from its module-level rng)
-gf.rng = np.random.default_rng(seed=metadata['seed'])
+# Pin random seed 
+rng = np.random.default_rng(seed=metadata['seed'])
 
 # Initiate and seed grid
-grid = gf.Grid(metadata['gridSize'],metadata['gridSize'],metadata['maxCells'])
+grid = gf.Grid(metadata['gridSize'],metadata['gridSize'],metadata['maxCells'],rng)
 grid.seed(metadata['circuit'],[metadata['PprodA'],metadata['kcatA'],metadata['kcatB']],metadata['Tcc'],metadata['varTcc'])
 
 # Run grid
