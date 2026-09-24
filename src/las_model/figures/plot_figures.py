@@ -758,32 +758,25 @@ B = img.imread(PROJECT_DIR / 'graphics/B_whiteborder.png')
 C = img.imread(PROJECT_DIR / 'graphics/C_whiteborder.png')
 satpathway = img.imread(PROJECT_DIR / 'graphics/ngigraphic62.png')
 
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_relatedness.pickle','rb') as f:
-    relatedness = pickle.load(f)
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_cousinmaps.pickle','rb') as f:
-    imgs = pickle.load(f)
+with open(PROJECT_DIR / 'cascade/cascade_spatial_analyze/cascade_spatial_analyze.pickle','rb') as f:
+    cascade_spatial_results = pickle.load(f)
+relatedness = cascade_spatial_results['relatedness']
+imgs = cascade_spatial_results['cousinmaps']
 
-# TODO: after running figure_06 cascade_time simulation, update to new data 
-# old data 
-with open(PROJECT_DIR / 'cascade/cascade_time_normdvar.pickle','rb') as f:
-    normvar = pickle.load(f)
-times = np.linspace(0,10,1001)
-
-# new data 
-# with open(PROJECT_DIR / 'cascade/cascade_time/cascade_time.pickle','rb') as f:
-#     cascade_time_results = pickle.load(f)
-# normvar = cascade_time_results['normvar'][0]
+with open(PROJECT_DIR / 'cascade/cascade_time/cascade_time.pickle','rb') as f:
+    cascade_time_results = pickle.load(f)
+normvar = cascade_time_results['normvar'][0]
 
 ts = [2000,4000,6000,8000,10000]
 molTimes = [4000,6000,8000,10000]
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_molConcMaps.pickle','rb') as f:
-    molAImgs,molBImgs,molCImgs = pickle.load(f)
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen_moranIs2.pickle','rb') as f:
-    morIs_discdist = pickle.load(f)
+molAImgs,molBImgs,molCImgs = cascade_spatial_results['molConcMaps']
+morIs_discdist = cascade_spatial_results['moranIs']
 
 
 
 #%% Figure 6 (spatial): plot 
+
+times = np.linspace(0,10,1001)
 
 def expDecay(x,tau,x0):
     return x0*np.exp(-x/tau)
@@ -2255,8 +2248,8 @@ ax.axis('off')
 
 #%% Figure S14 (cousin maps different reference cells): pull
 
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_cousinmaps_all.pickle','rb') as f:
-   imgs = pickle.load(f)
+with open(PROJECT_DIR / 'cascade/cascade_spatial_analyze/cascade_spatial_analyze.pickle','rb') as f:
+    imgs = pickle.load(f)['cousinmaps_all']
 cousinNums = [100,200,300,400,500]
 ts = [0,2000,4000,6000,8000,10000]
 
@@ -2321,35 +2314,17 @@ plt.show()
 
 weightdefs = img.imread(PROJECT_DIR / 'graphics/ngigraphic27.png')
 
-morIs_discdist = np.zeros([9,5,101])
-filenames = []
-for file in os.listdir(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_moranIs'):
-    if 'cascade_10gen2_morIs_discdist_r' in file:
-        filenames.append(os.path.join(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_moranIs', file))
+def load_moranIs(shape,radii=range(1,10)):
+    morIs = []
+    for r in radii:
+        name = f'cascade_spatial_moranI_{shape}_r{r}'
+        with open(PROJECT_DIR / 'cascade' / name / f'{name}.pickle','rb') as f:
+            morIs.append(pickle.load(f))
+    return np.stack(morIs,axis=0)
 
-for i in range(1,len(filenames)):
-    with open(filenames[i],'rb') as f:
-        morIs_discdist[i-1] = pickle.load(f)
-
-morIs_donut = np.zeros([9,5,101])
-filenames = []
-for file in os.listdir(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_moranIs'):
-    if 'cascade_10gen2_morIs_donut_r' in file:
-        filenames.append(os.path.join(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_moranIs', file))
-
-for i in range(1,len(filenames)):
-    with open(filenames[i],'rb') as f:
-        morIs_donut[i-1] = pickle.load(f)
-        
-morIs_gausdisc = np.zeros([9,5,101])
-filenames = []
-for file in os.listdir(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_moranIs'):
-    if 'cascade_10gen2_morIs_gausdist_r' in file:
-        filenames.append(os.path.join(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_moranIs', file))
-
-for i in range(1,len(filenames)):
-    with open(filenames[i],'rb') as f:
-        morIs_gausdisc[i-1] = pickle.load(f)
+morIs_discdist = load_moranIs('discdist')
+morIs_donut = load_moranIs('donut')
+morIs_gausdisc = load_moranIs('gausdist')
 
 #%% Figure S16 (Moran's I weight matrices): plot
 
