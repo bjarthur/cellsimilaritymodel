@@ -1,26 +1,46 @@
-﻿# Calculate Moran Is 
+# 3 Step Cascade Spatial Simulation: Moran's I for one neighborhood size and weight shape
+# usage: python cascade_spatial_moranI.py <neighborhoodsize> <shape>
+# <neighborhoodsize> is an int, typically 1-9
+# <shape> can be one of 'discdist', 'discstep', 'donut', 'gausdist'
 import sys
 import pickle
+from datetime import datetime 
 import numpy as np
 from las_model.utils.config import PROJECT_DIR
-
-filename = 'cascade_10gen2.pickle'
-fileprefix = filename.split('.')[0]
-
-with open(PROJECT_DIR / 'gridcells/mac_cascade/' + filename,'rb') as f:
-    grid = pickle.load(f)
+from las_model.utils.output import save_experiment
 
 neighborhoodsize = int(sys.argv[1])
 shape = str(sys.argv[2])
 
-timepoints = range(0,int(grid.timepoints[-1]),100)
+# Experiment metadata
+metadata = {
+    'experiment_name': f'cascade_spatial_moranI_{shape}_r{neighborhoodsize}',
+    'experiment_directory': 'cascade',
+    'created': datetime.now().isoformat(),
+    'source_experiment': 'cascade_spatial',
+    'neighborhoodsize': neighborhoodsize,
+    'shape': shape,
+    'timestep': 100,
+    'molecules': ['A','B','C'],
+}
 
+# Load grid from the spatial simulation 
+source_dir = PROJECT_DIR / metadata['experiment_directory'] / metadata['source_experiment']
+with open(source_dir / f"{metadata['source_experiment']}.pickle",'rb') as f:
+    grid = pickle.load(f)
+
+# Calculate Moran's I for each molecule over time 
+timepoints = range(0,int(grid.timepoints[-1]),metadata['timestep'])
 morIs = np.zeros([5,len(timepoints)])
-
 for i in range(len(timepoints)):
-    morIs[0,i] = grid.calcMoranI(neighborhoodsize,timepoints[i],'A',shape)
-    morIs[1,i] = grid.calcMoranI(neighborhoodsize,timepoints[i],'B',shape)
-    morIs[2,i] = grid.calcMoranI(neighborhoodsize,timepoints[i],'C',shape)
+    for j in range(len(metadata['molecules'])):
+        morIs[j,i] = grid.calcMoranI(metadata['neighborhoodsize'],timepoints[i],metadata['molecules'][j],metadata['shape'])
 
-with open(PROJECT_DIR / 'gridcells/mac_cascade/cascade_10gen2_moranIs/' + fileprefix+ '_morIs_' + shape + '_r' + str(neighborhoodsize) + '.pickle','wb') as f:
-    pickle.dump(morIs,f,pickle.HIGHEST_PROTOCOL)
+# Save results 
+exp_dir = save_experiment(
+    experiment_name=metadata['experiment_name'],
+    data=morIs,
+    metadata=metadata,
+    base_dir=PROJECT_DIR / metadata['experiment_directory']
+)
+print(f"Experiment saved to {exp_dir}")
