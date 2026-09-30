@@ -1197,8 +1197,10 @@ plt.show()
 
 prod_fixedB = img.imread(PROJECT_DIR / 'graphics/ngigraphic70.png')
 
-with open(PROJECT_DIR / 'fixed_reactant/fixedReactant4.pickle','rb') as f:
-    means_pA,variances_pA,vardSis_pA,vardRnd_pA,normvars_pA = pickle.load(f)
+with open(PROJECT_DIR / 'fixed_reactant/fixedreactant_sweep_PprodA/fixedreactant_sweep_PprodA.pickle','rb') as f:
+    (fixedreactant_PprodAs, fixedreactant_PprodBs), fixedreactant_PprodA_results = pickle.load(f)
+means_pA = fixedreactant_PprodA_results['means']
+normvars_pA = fixedreactant_PprodA_results['normvar']
 
 Tcc = 1000
 kcatA = 10**-1
@@ -1209,10 +1211,12 @@ prodColors2 = np.transpose(np.array((np.linspace(prodColorRange[0][0],prodColorR
                                     np.linspace(prodColorRange[0][1],prodColorRange[1][1],3),
                                     np.linspace(prodColorRange[0][2],prodColorRange[1][2],3))))
 
-with open(PROJECT_DIR / 'fixed_reactant/fixedReactant5.pickle','rb') as f:
-    means_kA,variances_kA,vardSis_kA,vardRnd_kA,normvars_kA = pickle.load(f)
+with open(PROJECT_DIR / 'fixed_reactant/fixedreactant_sweep_kcatA/fixedreactant_sweep_kcatA.pickle','rb') as f:
+    (fixedreactant_kcatAs, fixedreactant_PprodBs), fixedreactant_kcatA_results = pickle.load(f)
+means_kA = fixedreactant_kcatA_results['means']
+normvars_kA = fixedreactant_kcatA_results['normvar']
 
-kcatAs = np.logspace(-2,2,5)
+kcatAs = np.array(fixedreactant_kcatAs)
 kcatColors = np.transpose(np.array((np.linspace(255/255,231/255,5),
                                     np.linspace(184/255,117/255,5),
                                     np.linspace(98/255,78/255,5))))
