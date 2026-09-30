@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "cmapy==0.6.6",
     "matplotlib==3.10.7",
+    "numba==0.67.0",
     "numpy==2.3.4",
     "opencv-python==4.11.0.86",
     "python-dotenv>=1.2.3",

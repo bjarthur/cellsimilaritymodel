@@ -16,6 +16,7 @@ List of required software and versions:
 - python-version=3.13
 - cmapy>=0.6.6
 - matplotlib>=3.10.7
+- numba>=0.62.0
 - numpy>=2.3.4
 - opencv-python>=4.11.0.86
 - scipy>=1.16.2
