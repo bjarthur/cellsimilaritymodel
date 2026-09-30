@@ -1859,8 +1859,11 @@ plt.show()
 
 phosphorylation = img.imread(PROJECT_DIR / 'graphics/ngigraphic58.png')
 
-with open(PROJECT_DIR / 'prodRateSat/phos_int3.pickle','rb') as f:
-    prodAs,prodBs,Aeqs,Beqs,Ceqs,Deqs,Eeqs,varAs,varBs,varCs,varDs,varEs = pickle.load(f)
+# molecule 0 is the kinase A', 1 its active form A, 2 the substrate B', 3 the complex A B', 4 the product B 
+with open(PROJECT_DIR / 'phos_int/phos_int_sweep_PprodA_PprodB/phos_int_sweep_PprodA_PprodB.pickle','rb') as f:
+    PprodAs, PprodBs, results = pickle.load(f)
+Aprime_eq, A_eq, Bprime_eq, ABprime_eq, B_eq = [results['means'][:,:,k] for k in range(5)]
+normvar_Aprime, normvar_A, normvar_Bprime, normvar_ABprime, normvar_B = [results['normvar'][:,:,k] for k in range(5)]
 
 
 #%% Figure S10 (Monofunctional Phosphorylation Motif): plot 
@@ -1878,7 +1881,7 @@ ax.axis('off')
 
 f.text(0.001,0.62,'B',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[1:2,0:1])
-im = ax.imshow(np.log(Aeqs),origin='lower',vmin=-2,vmax=12,extent=[0,xmax,0,ymax])
+im = ax.imshow(np.log(Aprime_eq),origin='lower',vmin=-2,vmax=12,extent=[0,xmax,0,ymax])
 ax.set_title('log($[A\']_{eq}$)',fontsize=axisFontSize)
 ax.set_ylabel('$P_{prod,A\'}$',fontsize=axisFontSize)
 ax.set_xticks(np.linspace(0,xmax,2),['$10^{-3}$','$10^{2}$'])
@@ -1893,7 +1896,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 
 f.text(0.19,0.62,'C',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[1:2,1:2])
-im = ax.imshow(np.log(Beqs),origin='lower',vmin=-2,vmax=12,extent=[0,xmax,0,ymax])
+im = ax.imshow(np.log(A_eq),origin='lower',vmin=-2,vmax=12,extent=[0,xmax,0,ymax])
 ax.set_title('log($[A]_{eq}$)',fontsize=axisFontSize)
 ax.set_xticks(np.linspace(0,xmax,2),['$10^{-3}$','$10^{2}$'])
 ax.set_xticks(np.linspace(0,xmax,6),[],minor=1)
@@ -1907,7 +1910,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 
 f.text(0.38,0.62,'D',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[1:2,2:3])
-im = ax.imshow(np.log(Ceqs),origin='lower',vmin=-2,vmax=12,extent=[0,xmax,0,ymax])
+im = ax.imshow(np.log(Bprime_eq),origin='lower',vmin=-2,vmax=12,extent=[0,xmax,0,ymax])
 ax.set_title('log($[B\']_{eq}$)',fontsize=axisFontSize)
 ax.set_xticks(np.linspace(0,xmax,2),['$10^{-3}$','$10^{2}$'])
 ax.set_xticks(np.linspace(0,xmax,6),[],minor=1)
@@ -1921,7 +1924,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 
 f.text(0.57,0.62,'E',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[1:2,3:4])
-im = ax.imshow(np.log(Deqs),origin='lower',vmin=-2,vmax=12,extent=[0,xmax,0,ymax])
+im = ax.imshow(np.log(ABprime_eq),origin='lower',vmin=-2,vmax=12,extent=[0,xmax,0,ymax])
 ax.set_title('log($[A B\']_{eq}$)',fontsize=axisFontSize)
 ax.set_xticks(np.linspace(0,xmax,2),['$10^{-3}$','$10^{2}$'])
 ax.set_xticks(np.linspace(0,xmax,6),[],minor=1)
@@ -1935,7 +1938,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 
 f.text(0.75,0.62,'F',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[1:2,4:5])
-im = ax.imshow(np.log(Eeqs),origin='lower',vmin=-2,vmax=12,extent=[0,xmax,0,ymax])
+im = ax.imshow(np.log(B_eq),origin='lower',vmin=-2,vmax=12,extent=[0,xmax,0,ymax])
 ax.set_title('log($[B]_{eq}$)',fontsize=axisFontSize)
 ax.set_xticks(np.linspace(0,xmax,2),['$10^{-3}$','$10^{2}$'])
 ax.set_xticks(np.linspace(0,xmax,6),[],minor=1)
@@ -1957,7 +1960,7 @@ coef_cbar.outline.set_linewidth(2)
 f.text(0.001,0.3,'G',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[2:3,0:1])
 ax.set_title('$\Delta \hat{\sigma}^2_{\Delta [A\']}$',fontsize=axisFontSize)
-im = ax.imshow(varAs,origin='lower',vmin=0,vmax=1,cmap='inferno')
+im = ax.imshow(normvar_Aprime,origin='lower',vmin=0,vmax=1,cmap='inferno')
 ax.set_xlabel('$P_{prod,B\'}$',fontsize=axisFontSize)
 ax.set_ylabel('$P_{prod,A\'}$',fontsize=axisFontSize)
 ax.spines['left'].set_linewidth(tickWidth)
@@ -1973,7 +1976,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 f.text(0.19,0.3,'H',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[2:3,1:2])
 ax.set_title('$\Delta \hat{\sigma}^2_{\Delta [A]}$',fontsize=axisFontSize)
-im = ax.imshow(varBs,origin='lower',vmin=0,vmax=1,cmap='inferno')
+im = ax.imshow(normvar_A,origin='lower',vmin=0,vmax=1,cmap='inferno')
 ax.set_xlabel('$P_{prod,B\'}$',fontsize=axisFontSize)
 ax.spines['left'].set_linewidth(tickWidth)
 ax.spines['bottom'].set_linewidth(tickWidth)
@@ -1988,7 +1991,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 f.text(0.38,0.3,'I',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[2:3,2:3])
 ax.set_title('$\Delta \hat{\sigma}^2_{\Delta [B\']}$',fontsize=axisFontSize)
-im = ax.imshow(varCs,origin='lower',vmin=0,vmax=1,cmap='inferno')
+im = ax.imshow(normvar_Bprime,origin='lower',vmin=0,vmax=1,cmap='inferno')
 ax.set_xlabel('$P_{prod,B\'}$',fontsize=axisFontSize)
 ax.spines['left'].set_linewidth(tickWidth)
 ax.spines['bottom'].set_linewidth(tickWidth)
@@ -2003,7 +2006,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 f.text(0.57,0.3,'J',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[2:3,3:4])
 ax.set_title('$\Delta \hat{\sigma}^2_{\Delta [A B\']}$',fontsize=axisFontSize)
-im = ax.imshow(varDs,origin='lower',vmin=0,vmax=1,cmap='inferno')
+im = ax.imshow(normvar_ABprime,origin='lower',vmin=0,vmax=1,cmap='inferno')
 ax.set_xlabel('$P_{prod,B\'}$',fontsize=axisFontSize)
 ax.spines['left'].set_linewidth(tickWidth)
 ax.spines['bottom'].set_linewidth(tickWidth)
@@ -2018,7 +2021,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 f.text(0.75,0.3,'K',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[2:3,4:5])
 ax.set_title('$\Delta \hat{\sigma}^2_{\Delta [B]}$',fontsize=axisFontSize)
-im = ax.imshow(varEs,origin='lower',vmin=0,vmax=1,cmap='inferno')
+im = ax.imshow(normvar_B,origin='lower',vmin=0,vmax=1,cmap='inferno')
 ax.set_xlabel('$P_{prod,B\'}$',fontsize=axisFontSize)
 ax.spines['left'].set_linewidth(tickWidth)
 ax.spines['bottom'].set_linewidth(tickWidth)
