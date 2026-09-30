@@ -1,6 +1,4 @@
-﻿# TODO: run this file with full PprodB range 
-
-# Unsaturated production sweep substrate production rate 
+﻿# Unsaturated production sweep substrate production rate 
 from datetime import datetime 
 import numpy as np
 from las_model.utils import motiffunc as mf
@@ -21,8 +19,7 @@ metadata = {
     'circuit': 'produnsat',
     'PprodA': 10**-1,
     'kcatA': 10**-1,
-    # 'PprodBs': list(np.logspace(-2,4,31)), commented out for small test 
-    'PprodBs': list(np.logspace(-2,-1,2)),
+    'PprodBs': list(np.logspace(-2,4,31)),
     'Km': 10**3
 }
 
