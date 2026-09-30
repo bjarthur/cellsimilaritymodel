@@ -438,10 +438,19 @@ plt.show()
 
 prod = img.imread(PROJECT_DIR / 'graphics/ngigraphic88.png')
 
-with open(PROJECT_DIR / 'production/production_prodBsweep5.pickle','rb') as f:
-    Ameans,Avars,Bmeans,Bvars,Cmeans,Cvars,normvarAs,normvarBs,normvarCs = pickle.load(f)
-with open(PROJECT_DIR / 'production/production_prodAprodBsweep1.pickle','rb') as f:
-    Ameans1,Avars1,Bmeans1,Bvars1,Cmeans1,Cvars1,normvarAs1,normvarBs1,normvarCs1 = pickle.load(f)
+with open(PROJECT_DIR / 'production/produnsat_sweep_PprodB/produnsat_sweep_PprodB.pickle','rb') as f:
+    PprodB_sweep_PprodBs, PprodB_sweep_results = pickle.load(f)
+Ameans = PprodB_sweep_results['means'][:,0]
+normvarAs = PprodB_sweep_results['normvar'][:,0]
+normvarBs = PprodB_sweep_results['normvar'][:,1]
+normvarCs = PprodB_sweep_results['normvar'][:,2]
+
+with open(PROJECT_DIR / 'production/produnsat_sweep_PprodA_PprodB/produnsat_sweep_PprodA_PprodB.pickle','rb') as f:
+    (PprodA_PprodB_sweep_PprodAs, PprodA_PprodB_sweep_PprodBs), PprodA_PprodB_sweep_results = pickle.load(f)
+Ameans1 = PprodA_PprodB_sweep_results['means'][:,:,0]
+Bmeans1 = PprodA_PprodB_sweep_results['means'][:,:,1]
+normvarAs1 = PprodA_PprodB_sweep_results['normvar'][:,:,0]
+normvarCs1 = PprodA_PprodB_sweep_results['normvar'][:,:,2]
 
 prodColorRange = [enzymeColor,[68/255,10/255,21/255]]
 prodColors = np.transpose(np.array((np.linspace(prodColorRange[0][0],prodColorRange[1][0],16),
