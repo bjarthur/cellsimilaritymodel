@@ -17,11 +17,9 @@ metadata = {
     'Tcc': 1000,
     'varTcc': 0,
     'circuit': 'produnsat',
-    # 'PprodAs': list(np.logspace(-2,1,16)), commented out for small test 
-    'PprodAs': list(np.logspace(-2,-1,2)),
+    'PprodAs': list(np.logspace(-2,1,16)),
     'kcatA': 10**-1,
-    # 'PprodBs': list(np.logspace(-2,4,31)), commented out for small test 
-    'PprodBs': list(np.logspace(-2,-1,2)),
+    'PprodBs': list(np.logspace(-2,4,31)),
     'Km': 10**3
 }
 
@@ -68,8 +66,10 @@ for PprodA in metadata['PprodAs']:
         results['vardsis'].append(vardsis)
         results['normvar'].append(normvar)
 
-# Stack results 
+# Stack results into a (PprodA, PprodB, ...) grid 
+nPprodA, nPprodB = len(metadata['PprodAs']), len(metadata['PprodBs'])
 results = {k: np.stack(v,axis=0) for k, v in results.items()}
+results = {k: v.reshape(nPprodA, nPprodB, *v.shape[1:]) for k, v in results.items()}
 
 # Save results 
 exp_dir = save_experiment(
