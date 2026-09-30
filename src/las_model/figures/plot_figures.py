@@ -2200,24 +2200,21 @@ coef_cbar.outline.set_color('white')
 
 #%% Figure S15 (relatedness curves different grids): pull
 
-with open(PROJECT_DIR / 'gridcells/randomseeds/grid_1000_relatedness.pickle','rb') as f:
-    relatedness_1000 = pickle.load(f)
-with open(PROJECT_DIR / 'gridcells/randomseeds/grid_1001_relatedness.pickle','rb') as f:
-    relatedness_1001 = pickle.load(f)
-with open(PROJECT_DIR / 'gridcells/randomseeds/grid_1002_relatedness.pickle','rb') as f:
-    relatedness_1002 = pickle.load(f)
+with open(PROJECT_DIR / 'cascade/cascade_spatial_seeds/cascade_spatial_seeds.pickle','rb') as f:
+    cascade_spatial_seeds, cascade_spatial_seeds_results = pickle.load(f)
+relatedness_seeds = cascade_spatial_seeds_results['relatedness']     # one (cells, radii) array per seed
 
 #%% Figure S15 (relatedness curves different grids): plot
 
 f,ax = plt.subplots(figsize=(8,5))
 
-ax.scatter(np.linspace(1,8,8),np.mean(relatedness_1000,axis=0),color=randomColor,label='seed=1000')
-ax.errorbar(np.linspace(1,8,8),np.mean(relatedness_1000,axis=0),yerr=np.std(relatedness_1000,axis=0),fmt='None',ecolor=randomColor)
-ax.scatter(np.linspace(0.9,7.9,8),np.mean(relatedness_1001,axis=0),color=TccColor,label='seed=1001')
-ax.errorbar(np.linspace(0.9,7.9,8),np.mean(relatedness_1001,axis=0),yerr=np.std(relatedness_1001,axis=0),fmt='None',ecolor=TccColor)
-ax.scatter(np.linspace(1.1,8.1,8),np.mean(relatedness_1002,axis=0),color=kcatColor,label='seed=1002')
-ax.errorbar(np.linspace(1.1,8.1,8),np.mean(relatedness_1002,axis=0),yerr=np.std(relatedness_1002,axis=0),fmt='None',ecolor=kcatColor)
-ax.legend(frameon=0,fontsize=tickFontSize,loc='lower right')
+radii = np.arange(1,relatedness_seeds[0].shape[1]+1)
+offsets = np.linspace(-0.3,0.3,len(cascade_spatial_seeds))
+seedColors = plt.cm.viridis(np.linspace(0,0.9,len(cascade_spatial_seeds)))
+for i, (seed, relatedness) in enumerate(zip(cascade_spatial_seeds,relatedness_seeds)):
+    ax.scatter(radii+offsets[i],np.mean(relatedness,axis=0),color=seedColors[i],label='seed=%i' % seed)
+    ax.errorbar(radii+offsets[i],np.mean(relatedness,axis=0),yerr=np.std(relatedness,axis=0),fmt='None',ecolor=seedColors[i])
+ax.legend(frameon=0,fontsize=12,loc='lower right',ncol=2)
 ax.set_ylim([0,7])
 ax.set_xlabel('Neighborhood Size (Cell Lengths)',fontsize=axisFontSize)
 ax.set_ylabel('Relatedness (Ave. Cousin #)',fontsize=axisFontSize)
