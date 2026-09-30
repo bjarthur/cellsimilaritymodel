@@ -2047,8 +2047,14 @@ plt.show()
 
 pathway = img.imread(PROJECT_DIR / 'graphics/ngigraphic60.png')
 
-with open(PROJECT_DIR / 'prodRateSat/phos2_0.pickle','rb') as f:
-    prodAs,prodBs,Aeqs,Beqs,Ceqs,Eeqs,Deqs,Feqs,varAs,varBs,varCs,varDs,varEs,varFs = pickle.load(f)
+# molecule 0 is the kinase A', 1 its phosphorylated form A, 2 the regulator B', 3 its phosphorylated form B, 
+# 4 the complex A B', 5 the complex A' B 
+with open(PROJECT_DIR / 'phos_bi/phos_bi_sweep_PprodA_PprodB/phos_bi_sweep_PprodA_PprodB.pickle','rb') as f:
+    PprodAs, PprodBs, results = pickle.load(f)
+Tcc_phos_bi = 1000
+normvar_B = results['normvar'][:,:,3]
+AprimeB_eq = results['means'][:,:,5]
+A_total = np.array(PprodAs)[:,None] * Tcc_phos_bi     # PprodA * Tcc, one value per row of the (PprodA, PprodB) grid
 
 #%% Figure S11 (Bifunctional TCS): Plot
 
@@ -2062,7 +2068,7 @@ ax.axis('off')
 
 f.text(0.33,0.89,'B',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[0:1,1:2])
-im = ax.imshow(varDs[0:21,:],origin='lower',vmin=0,vmax=1,cmap='inferno',aspect=1.5)
+im = ax.imshow(normvar_B[0:21,:],origin='lower',vmin=0,vmax=1,cmap='inferno',aspect=1.5)
 ax.set_xticks(np.linspace(0,30,6),['$10^{-3}$','$10^{-2}$','$10^{-1}$','$10^0$','$10^1$','$10^2$'])
 ax.set_yticks(np.linspace(0,20,4),['$10^{-3}$','$10^{-2}$','$10^{-1}$','$10^0$'])
 ax.set_xlabel('$P_{prod,B\'}$',fontsize=axisFontSize)
@@ -2082,7 +2088,7 @@ coef_cbar.outline.set_linewidth(2)
 
 f.text(0.67,0.89,'C',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[0:1,2:3])
-im = ax.imshow(Feqs[0:21,:]/(prodAs[0:21,:]*1000),origin='lower',vmin=0,vmax=1,cmap='hot',aspect=1.5)
+im = ax.imshow((AprimeB_eq/A_total)[0:21,:],origin='lower',vmin=0,vmax=1,cmap='hot',aspect=1.5)
 ax.set_xticks(np.linspace(0,30,6),['$10^{-3}$','$10^{-2}$','$10^{-1}$','$10^0$','$10^1$','$10^2$'])
 ax.set_yticks(np.linspace(0,20,4),['$10^{-3}$','$10^{-2}$','$10^{-1}$','$10^0$'])
 ax.set_xlabel('$P_{prod,B\'}$',fontsize=axisFontSize)
