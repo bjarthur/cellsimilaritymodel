@@ -82,37 +82,24 @@ toymodel_kcatB = img.imread(PROJECT_DIR / 'graphics/ngigraphic85.png')
 
 amp_diagram = img.imread(PROJECT_DIR / 'graphics/ngigraphic87.png')
 
-PprodAs = np.logspace(-3,2,6)
 Tcc_prodAsweep = 1000
 kcatA_prodAsweep = 0.1
-drnds = np.zeros([len(PprodAs),1000,6])
-dsiss = np.zeros_like(drnds)
 
-for file in os.listdir(PROJECT_DIR / 'satprod/n1000'):
-    index = int(file.split('_')[2].split('.')[0])
-
-    filepath = os.path.join(PROJECT_DIR / 'satprod/n1000', file)
-    with open(filepath,'rb') as f:
-        PprodA,Tcc,kcatA,motherA,motherB,drnd,dsis = pickle.load(f)
-    
-    drnds[index] = drnd
-    dsiss[index] = dsis
+with open(PROJECT_DIR / 'satprod/satprod_PprodAsweep/satprod_PprodAsweep.pickle','rb') as f:
+    PprodAs, satprod_results = pickle.load(f)
+PprodAs = np.array(PprodAs)
 
 graphic = img.imread(PROJECT_DIR / 'graphics/ngigraphic40.png')
 
-with open(PROJECT_DIR / 'asymmetric/asymmetric_bias_screen_2.pickle','rb') as f:
+with open(PROJECT_DIR / 'asymmetric/single_partition_bias_screen/single_partition_bias_screen.pickle','rb') as f:
     biases,vardsis,vardrnd,normvar = pickle.load(f)
 
-with open(PROJECT_DIR / 'satprod/satprod_prodAsweep.pickle','rb') as f:
-    PprodAs,Tcc,kcatA,Aeqs,drndA,dsisA = pickle.load(f)
-prodAs = np.logspace(-3,2,6)
-As = prodAs * 1000 * 2
 
-with open(PROJECT_DIR / 'burstSize/burstSize_prodA-2.pickle','rb') as f:
+with open(PROJECT_DIR / 'burstSize/burstSize_prodA-2/burstSize_prodA-2.pickle','rb') as f:
     burstSizes_0,prodAs_0,Aeqs_0,Beqs_0,normvarAs_0,normvarBs_0 = pickle.load(f)
-with open(PROJECT_DIR / 'burstSize/burstSize_prodA-1.pickle','rb') as f:
+with open(PROJECT_DIR / 'burstSize/burstSize_prodA-1/burstSize_prodA-1.pickle','rb') as f:
     burstSizes_1,prodAs_1,Aeqs_1,Beqs_1,normvarAs_1,normvarBs_1 = pickle.load(f)
-with open(PROJECT_DIR / 'burstSize/burstSize_prodA-0.pickle','rb') as f:
+with open(PROJECT_DIR / 'burstSize/burstSize_prodA-0/burstSize_prodA-0.pickle','rb') as f:
     burstSizes_2,prodAs_2,Aeqs_2,Beqs_2,normvarAs_2,normvarBs_2 = pickle.load(f)
 colors = [enzymeColor,color_L,[68/255,10/255,21/255]]
 
@@ -148,8 +135,8 @@ ax.axis('off')
 f.text(0.245,0.95,'B',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot([0.31,0.75,.15,.2])
 ax.scatter(0,1,2,color='white',label='Numerical')
-ax.scatter(As,np.var(drnds[:,:,0],axis=1),color=randomColor,label='$\Delta\sigma^2_{[A],rnd}$',s=dotsize,alpha=0.5)
-ax.scatter(As,np.var(dsiss[:,:,0],axis=1),color=enzymeColor,label='$\Delta\sigma^2_{[A],sis}$',s=dotsize,alpha=0.5)
+ax.scatter(As,satprod_results['vardrnd'][:,0],color=randomColor,label='$\Delta\sigma^2_{[A],rnd}$',s=dotsize,alpha=0.5)
+ax.scatter(As,satprod_results['vardsis'][:,0],color=enzymeColor,label='$\Delta\sigma^2_{[A],sis}$',s=dotsize,alpha=0.5)
 ax.hlines(0,1,2,color='white',label='Analytical')
 ax.plot(As,var_dA_rnd(PprodAs,Tcc_prodAsweep),color=randomColor,linestyle='dashed',label='$\Delta\sigma^2_{[A],rnd}$')
 ax.plot(As,var_dA_sis(PprodAs,Tcc_prodAsweep),color=enzymeColor,linestyle='dotted',label='$\Delta\sigma^2_{[A],sis}$')
@@ -182,8 +169,8 @@ ax.axis('off')
 f.text(0.47,0.95,'C',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot([0.54,0.75,.15,.2])
 ax.scatter(0,1,2,color='white',label='Numerical')
-ax.scatter(As,np.var(drnds[:,:,1],axis=1),color=randomColor,label='$\Delta\sigma^2_{[B],rnd}$',s=dotsize,alpha=0.5)
-ax.scatter(As,np.var(dsiss[:,:,1],axis=1),color=signalColor,label='$\Delta\sigma^2_{[B],sis}$',s=dotsize,alpha=0.5)
+ax.scatter(As,satprod_results['vardrnd'][:,1],color=randomColor,label='$\Delta\sigma^2_{[B],rnd}$',s=dotsize,alpha=0.5)
+ax.scatter(As,satprod_results['vardsis'][:,1],color=signalColor,label='$\Delta\sigma^2_{[B],sis}$',s=dotsize,alpha=0.5)
 ax.hlines(0,1,2,color='white',label='Analytical')
 ax.plot(As,var_dB_rnd(kcatA_prodAsweep,PprodAs,Tcc_prodAsweep),color=randomColor,linestyle='dashed',label='$\Delta\sigma^2_{[B],rnd}$')
 ax.plot(As,var_dB_sis(kcatA_prodAsweep,PprodAs,Tcc_prodAsweep),color=signalColor,linestyle='dotted',label='$\Delta\sigma^2_{[B],sis}$')
@@ -245,7 +232,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 f.text(0.27,0.23,'G',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[2,1])
 ax.hlines(0,0,10**6,color='k',linestyle='dashed',linewidth=plotWidth)
-ax.scatter(As,1-np.var(dsisA[:,:,0],axis=1)/np.var(drndA[:,:,0],axis=1),color=randomColor)
+ax.scatter(As,satprod_results['normvar'][:,0],color=randomColor)
 ax.set_xlabel('Concentration ($[A]_{eq}$)',fontsize=axisFontSize,labelpad=0)
 # ax.set_ylabel('Norm. Similarity ($\sigma^2_{\Delta [A]}$)',fontsize=axisFontSize,labelpad=0)
 ax.set_xscale('log')
