@@ -1140,8 +1140,6 @@ plt.show()
 
 #%% Figure S5 (Saturated Production Amplification Factor 2D): pull data 
 
-#TODO: run after running figure_S05/prodsat_sweep_kcatA_Tcc.py 
-
 def normdvar(kT):
     return 20/9*kT/(3+20/9*kT)
 
@@ -1149,25 +1147,7 @@ with open(PROJECT_DIR / 'satprod/prodsat_sweep_kcatA_Tcc/prodsat_sweep_kcatA_Tcc
     kcatAs,Tccs,results = pickle.load(f)
 
 model = normdvar(np.outer(kcatAs, Tccs))
-
-
-#normvarBs = np.zeros([len(prodAs),len(kcatAs),len(Tccs)])
-
-# for i in range(len(model)):
-#     for j in range(len(model[i])):
-#             model[i,j] = normdvar(kcatAs[i]*Tccs[j])
-
-# for file in os.listdir(PROJECT_DIR / 'prodsat_sweep/sweep1'):
-    
-#     prodAindex = int(file.split('_')[4])
-#     kcatAindex = int(file.split('_')[6].split('.')[0])
-    
-#     filepath = os.path.join(PROJECT_DIR / 'prodsat_sweep/sweep1', file)
-#     with open(filepath,'rb') as f:
-#         prodA,kcatA,Tccs,divStates,dsis,drnd = pickle.load(f)
-
-#     normvarBs[prodAindex,kcatAindex] = 1-np.var(dsis[:,:,1],axis=1)/np.var(drnd[:,:,1],axis=1)
-
+normvarBs_kcatA_Tcc = results['normvar'][:,:,1].T   # (kcatA, Tcc), same orientation as model
 
 #%% Figure S5 (Saturated Production Amplification Factor 2D): plot 
 
@@ -1192,7 +1172,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 
 f.text(0.45,0.89,'B',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[0:1,1:2])
-im = ax.imshow(normvarBs[0],origin='lower',cmap='inferno',vmin=-.2,vmax=1)
+im = ax.imshow(normvarBs_kcatA_Tcc,origin='lower',cmap='inferno',vmin=-.2,vmax=1)
 ax.set_title('Simulation',fontsize=axisFontSize)
 ax.spines['left'].set_linewidth(tickWidth)
 ax.spines['bottom'].set_linewidth(tickWidth)
