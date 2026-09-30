@@ -80,8 +80,6 @@ toymodel_enzymeA = img.imread(PROJECT_DIR / 'graphics/ngigraphic83.png')
 toymodel_kcatA = img.imread(PROJECT_DIR / 'graphics/ngigraphic84.png')
 toymodel_kcatB = img.imread(PROJECT_DIR / 'graphics/ngigraphic85.png')
 
-amp_diagram = img.imread(PROJECT_DIR / 'graphics/ngigraphic87.png')
-
 Tcc_prodAsweep = 1000
 kcatA_prodAsweep = 0.1
 
@@ -295,14 +293,15 @@ plt.show()
 
 #%% Figure 3 (Adjusting LAS): Pull Data 
 
+amp_diagram = img.imread(PROJECT_DIR / 'graphics/ngigraphic87.png')
+
 with open(PROJECT_DIR / 'satprod/prodsat_sweep_kcat_low/prodsat_sweep_kcat_low/prodsat_sweep_kcat_low.pickle','rb') as f:
     kcatA_low_sweep_kcatAs, kcatA_low_sweep_results = pickle.load(f)
 
 with open(PROJECT_DIR / 'satprod/prodsat_sweep_Tcc_low/prodsat_sweep_Tcc_low.pickle','rb') as f:
     Tcc_low_sweep_Tccs, Tcc_low_sweep_results = pickle.load(f)
+kcatA_Tcc_low_sweep = 0.01
 
-with open(PROJECT_DIR / 'analyticalData/motifs_prodsat_sweepdata_reduced.pickle','rb') as f:
-    Tccs,Tccvar_dsis,Tccvar_drnd,kcats_prodsat,kcatvar_dsis,kcatvar_drnd = pickle.load(f)
 kcatMrange = np.logspace(-4,0,61)
 Tccrange = np.logspace(2,4,11)
 kcat = 0.01
@@ -314,26 +313,8 @@ prodAs = np.logspace(-2,0,3)
 kcatAs = np.logspace(-4,0,9)
 Tccs_sweep = np.logspace(2,4,5)
 
-normvars_Tcc = 1-Tccvar_dsis[:,1]/Tccvar_drnd[:,1]
-normvars_kcat = 1-kcatvar_dsis[:,1]/kcatvar_drnd[:,1]
-
-params_Tcc,cov_Tcc = curve_fit(logFit,Tccs_sweep*kcat,normvars_Tcc,p0=[1,100,1])
-params_kcat,cov_kcat = curve_fit(logFit,kcats_prodsat*Tcc,normvars_kcat,p0=[1,100,1])
-
 kcatColorRange = [[255/255,184/255,98/255],[231/255,117/255,78/255]]
 kcatColors = np.transpose(np.array((np.linspace(255/255,231/255,4),np.linspace(184/255,117/255,4),np.linspace(98/255,78/255,4))))
-
-# kcatA2_kcats = np.zeros(13)
-# kcatA2_normvarBs = np.zeros(13)
-# for file in os.listdir(PROJECT_DIR / 'prodsat_sweep/prodsat_kcatsweep'):
-#     kcatAindex = int(file.split('_')[3].split('.')[0])
-
-#     filepath = os.path.join(PROJECT_DIR / 'prodsat_sweep/prodsat_kcatsweep', file)
-#     with open(filepath,'rb') as f:
-#         kcatA,normvarA,normvarB = pickle.load(f)
-    
-#     kcatA2_kcats[kcatAindex] = kcatA
-#     kcatA2_normvarBs[kcatAindex] = normvarB
 
 with open(PROJECT_DIR / 'satprod/prodsat_sweep_kcat_high/prodsat_sweep_kcat_high.pickle','rb') as f:
     kcatA_high_sweep_kcatAs, kcatA_high_sweep_results = pickle.load(f)
@@ -341,39 +322,21 @@ with open(PROJECT_DIR / 'satprod/prodsat_sweep_kcat_high/prodsat_sweep_kcat_high
 kcatA2_kcats = np.array(kcatA_high_sweep_kcatAs)
 kcatA2_normvarBs = kcatA_high_sweep_results['normvar'][:,1]
 
-# TODO: update Tcc2 sweep pull with new data
-# NEW DATA LOCATION: 
-# with open(PROJECT_DIR / 'satprod/prodsat_sweep_Tcc_high/prodsat_sweep_Tcc_high.pickle','rb') as f:
-    # Tcc_high_sweep_Tccs, Tcc_high_sweep_results = pickle.load(f)
+with open(PROJECT_DIR / 'satprod/prodsat_sweep_Tcc_high/prodsat_sweep_Tcc_high.pickle','rb') as f:
+    Tcc_high_sweep_Tccs, Tcc_high_sweep_results = pickle.load(f)
 
-# OLD DATA LOCATION: 
-Tccs2_Tcc = np.zeros(5)
-Tccs2_normvarBs = np.zeros(5)
-for file in os.listdir(PROJECT_DIR / 'prodsat_sweep/prodsat_Tccsweep'):
-    Tccindex = int(file.split('_')[3].split('.')[0])
-    
-    filepath = os.path.join(PROJECT_DIR / 'prodsat_sweep/prodsat_Tccsweep', file)
-    with open(filepath,'rb') as f:
-        Tcc,normvarA,normvarB = pickle.load(f)
-    
-    Tccs2_Tcc[Tccindex] = Tcc
-    Tccs2_normvarBs[Tccindex] = normvarB
+Tccs2_Tcc = np.array(Tcc_high_sweep_Tccs)
+Tccs2_normvarBs = Tcc_high_sweep_results['normvar'][:,1]
 
 Tcc = 1000
 
 times = np.linspace(0,10,1001)
-normvars = np.zeros([20,6,1001])
 
-Rkcats = np.zeros(20)
-for file in os.listdir(PROJECT_DIR / 'prodanddeg/Rkcatsweep2'):
-    index = int(file.split('_')[1].split('.')[0])
-    
-    filepath = os.path.join(PROJECT_DIR / 'prodanddeg/Rkcatsweep2', file)
-    with open(filepath,'rb') as f:
-        kcatA_Rkcat_sweep,kcatB,normvar = pickle.load(f)
-    
-    normvars[index] = normvar
-    Rkcats[index] = kcatB/kcatA_Rkcat_sweep
+with open(PROJECT_DIR / 'prodanddeg/proddeg_rkcat_sweep/proddeg_rkcat_sweep.pickle','rb') as f:
+    Rkcat_sweep_values, Rkcat_sweep_results = pickle.load(f)
+
+normvars = Rkcat_sweep_results['normvar']
+Rkcats = np.array(Rkcat_sweep_values['kcatBs'])/np.array(Rkcat_sweep_values['kcatAs'])
 
 colors = np.ones([len(Rkcats),4])
 colors[:,0] = np.linspace(112/255,52/255,len(Rkcats))
@@ -392,9 +355,9 @@ ax = f.add_subplot(gs[0,0])
 ax.vlines(27/20,-.2,1,color='gray',linestyle=(0, (8, 8)),zorder=0)
 ax.hlines(0,0,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth,zorder=0)
 ax.plot(kTrange,normdvar(kTrange),color='k',linewidth=plotWidth,zorder=1,label='Analytical')
-ax.scatter(np.array(Tcc_low_sweep_Tccs)*kcatA,Tcc_low_sweep_results['normvar'][:,1],color=TccSweepColor,label='$T_{cc}$ sweep',marker='s')
+ax.scatter(np.array(Tcc_low_sweep_Tccs)*kcatA_Tcc_low_sweep,Tcc_low_sweep_results['normvar'][:,1],color=TccSweepColor,label='$T_{cc}$ sweep',marker='s')
 ax.scatter(Tccs2_Tcc*10**-1,Tccs2_normvarBs,color=TccSweepColor2,label='$T_{cc}$ sweep 2',marker='+')
-ax.scatter(kcatA_low_sweep_kcatAs*Tcc,kcatA_low_sweep_results['normvar'][:,1],color=kcatColor,label='$k_{cat}$ sweep',marker='s')
+ax.scatter(np.array(kcatA_low_sweep_kcatAs)*Tcc,kcatA_low_sweep_results['normvar'][:,1],color=kcatColor,label='$k_{cat}$ sweep',marker='s')
 ax.scatter(kcatA2_kcats*Tcc,kcatA2_normvarBs,color=kcatColor2,label='$k_{cat}$ sweep 2',marker='+')
 ax.legend(frameon=0,fontsize=10,loc='upper left',bbox_to_anchor=[0.45,0.37,.5,.5])
 ax.set_xscale('log')
