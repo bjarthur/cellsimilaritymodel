@@ -1305,21 +1305,21 @@ irreversible = img.imread(PROJECT_DIR / 'graphics/ngigraphic53.png')
 reversible = img.imread(PROJECT_DIR / 'graphics/ngigraphic67.png')
 a_slider = img.imread(PROJECT_DIR / 'graphics/a_slider.png')
 
-# Old Data 
-with open(PROJECT_DIR / 'prodRateSat/bind3.pickle','rb') as f:
-    prodAs,prodBs,Aeqs,Beqs,Ceqs,varAs,varBs,varCs = pickle.load(f)
+# Irreversible binding: molecule 0 is the ligand A, 1 the unbound TF B', 2 the bound TF B 
+with open(PROJECT_DIR / 'binding/bind_sweep_PprodA_PprodB/bind_sweep_PprodA_PprodB.pickle','rb') as f:
+    PprodAs, PprodBs, results = pickle.load(f)
+unboundTF_bind = results['means'][:,:,1]
+normvar_ligand_bind = results['normvar'][:,:,0]
+normvar_unboundTF_bind = results['normvar'][:,:,1]
+normvar_boundTF_bind = results['normvar'][:,:,2]
 
-# New Data
-# with open(PROJECT_DIR / 'binding/bind_sweep_PprodA_PprodB/bind_sweep_PprodA_PprodB.pickle','rb') as f:
-#     PprodAs, PprodBs, results = pickle.load(f)
-
-# Reversible Binding: Old Data 
-with open(PROJECT_DIR / 'binding_rev/revbind4.pickle','rb') as f:
-    prodAs_rev,prodBs_rev,Aeqs_rev,Beqs_rev,Ceqs_rev,varAs_rev,varBs_rev,varCs_rev,normvarAs_rev,normvarBs_rev,normvarCs_rev = pickle.load(f)
-
-# Reversible Binding: New Data 
-# with open(PROJECT_DIR / 'binding_rev/bind_sweep_PprodA_PprodB_rev/bind_sweep_PprodA_PprodB_rev.pickle','rb') as f:
-    # PprodAs_rev, PprodBs_rev, results_rev = pickle.load(f)
+# Reversible binding 
+with open(PROJECT_DIR / 'binding_rev/revbind_sweep_PprodA_PprodB/revbind_sweep_PprodA_PprodB.pickle','rb') as f:
+    PprodAs_rev, PprodBs_rev, results_rev = pickle.load(f)
+unboundTF_revbind = results_rev['means'][:,:,1]
+normvar_ligand_revbind = results_rev['normvar'][:,:,0]
+normvar_unboundTF_revbind = results_rev['normvar'][:,:,1]
+normvar_boundTF_revbind = results_rev['normvar'][:,:,2]
 
 prodColorRange = [enzymeColor,[68/255,10/255,21/255]]
 prodColors = np.transpose(np.array((np.linspace(prodColorRange[0][0],prodColorRange[1][0],31),
@@ -1327,8 +1327,6 @@ prodColors = np.transpose(np.array((np.linspace(prodColorRange[0][0],prodColorRa
                                     np.linspace(prodColorRange[0][2],prodColorRange[1][2],31))))
 
 #%% Figure S7 (Irreversible and Reversible Binding): Plot
-
-#TOOD: update with new data variables 
 
 f = plt.figure(figsize=(16,7))
 gs = GridSpec(2,4,figure=f,wspace=0.6,hspace=0.5)
@@ -1342,8 +1340,8 @@ ax.axis('off')
 f.text(0.22,0.93,'B',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[0:1,1:2])
 ax.hlines(0,10**-1,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth,zorder=0)
-for i in range(len(prodAs)):
-    ax.scatter(Aeqs[:,i],varBs[:,i],color=prodColors[i])
+for i in range(len(PprodAs)):
+    ax.scatter(unboundTF_bind[i],normvar_ligand_bind[i],color=prodColors[i])
 ax.set_xscale('log')
 ax.set_xlim([10**-1,2*10**5])
 ax.set_xticks(np.logspace(-1,5,4))
@@ -1369,8 +1367,8 @@ ax.axis('off')
 f.text(0.47,0.93,'C',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[0:1,2:3])
 ax.hlines(0,10**-2,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth,zorder=0)
-for i in range(len(prodAs)):
-    ax.scatter(Aeqs[:,i],varAs[:,i],color=prodColors[i])
+for i in range(len(PprodAs)):
+    ax.scatter(unboundTF_bind[i],normvar_unboundTF_bind[i],color=prodColors[i])
 ax.set_xscale('log')
 ax.set_xlim([10**-1,2*10**5])
 ax.set_xticks(np.logspace(-1,5,4))
@@ -1396,8 +1394,8 @@ ax.axis('off')
 f.text(0.73,0.93,'D',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[0:1,3:4])
 ax.hlines(0,10**-2,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth,zorder=0)
-for i in range(len(prodAs)):
-    ax.scatter(Aeqs[:,i],varCs[:,i],color=prodColors[i])
+for i in range(len(PprodAs)):
+    ax.scatter(unboundTF_bind[i],normvar_boundTF_bind[i],color=prodColors[i])
 ax.set_xscale('log')
 ax.set_xlim([10**-1,2*10**5])
 ax.set_xticks(np.logspace(-1,5,4))
@@ -1429,8 +1427,8 @@ ax.axis('off')
 f.text(0.22,0.42,'F',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[1:2,1:2])
 ax.hlines(0,10**-2,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth,zorder=0)
-for i in range(len(prodAs_rev)):
-    ax.scatter(Aeqs_rev[:,i],normvarBs_rev[:,i],color=prodColors[i])
+for i in range(len(PprodAs_rev)):
+    ax.scatter(unboundTF_revbind[i],normvar_ligand_revbind[i],color=prodColors[i])
 ax.set_xscale('log')
 ax.set_xlim([10**-1,2*10**5])
 ax.set_xticks(np.logspace(-1,5,4))
@@ -1456,8 +1454,8 @@ ax.axis('off')
 f.text(0.47,0.42,'G',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[1:2,2:3])
 ax.hlines(0,10**-2,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth,zorder=0)
-for i in range(len(prodAs_rev)):
-    ax.scatter(Aeqs_rev[:,i],normvarAs_rev[:,i],color=prodColors[i])
+for i in range(len(PprodAs_rev)):
+    ax.scatter(unboundTF_revbind[i],normvar_unboundTF_revbind[i],color=prodColors[i])
 ax.set_xscale('log')
 ax.set_xlim([10**-1,2*10**5])
 ax.set_xticks(np.logspace(-1,5,4))
@@ -1483,8 +1481,8 @@ ax.axis('off')
 f.text(0.73,0.42,'H',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[1:2,3:4])
 ax.hlines(0,10**-2,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth,zorder=0)
-for i in range(len(prodAs_rev)):
-    ax.scatter(Aeqs_rev[:,i],normvarCs_rev[:,i],color=prodColors[i])
+for i in range(len(PprodAs_rev)):
+    ax.scatter(unboundTF_revbind[i],normvar_boundTF_revbind[i],color=prodColors[i])
 ax.set_xscale('log')
 ax.set_xlim([10**-1,2*10**5])
 ax.set_xticks(np.logspace(-1,5,4))
