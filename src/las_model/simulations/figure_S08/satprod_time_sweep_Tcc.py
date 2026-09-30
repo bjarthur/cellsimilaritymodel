@@ -47,8 +47,8 @@ for Tcc in metadata['Tccs']:
     motherCell.equilibrate(metadata['nCells_equilibrium'])
     motherCell.run(metadata['nCells'])
 
-    # Calculate offspring similarity 
-    dsis, drnd, vardsis, vardrnd, normvar = calculate_offspring_similarity_time(motherCell,metadata,rng)
+    # Calculate offspring similarity; the offspring run with this iteration's Tcc 
+    dsis, drnd, vardsis, vardrnd, normvar = calculate_offspring_similarity_time(motherCell,{**metadata, 'Tcc': Tcc},rng)
 
     # append results 
     results['dsis'].append(dsis)
@@ -57,13 +57,13 @@ for Tcc in metadata['Tccs']:
     results['vardrnd'].append(vardrnd)
     results['normvar'].append(normvar)
 
-# Stack results 
-results = {k: np.stack(v,axis=0) for k, v in results.items()}
+# Results stay as lists, one entry per Tcc: the molecule time series has Tcc/10 + 1 
+# samples per cycle, so the arrays differ in length across the sweep and cannot be stacked 
 
 # Save results 
 exp_dir = save_experiment(
     experiment_name=metadata['experiment_name'],
-    data = [metadata['PprodAs'],results],
+    data = [metadata['Tccs'],results],
     metadata=metadata,
     base_dir=PROJECT_DIR / metadata['experiment_directory']
 )

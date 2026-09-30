@@ -1515,34 +1515,18 @@ plt.show()
 circuit = img.imread(PROJECT_DIR / 'graphics/ngigraphic50.png')
 
 times = np.linspace(0,10,1001)
-Tccs = [500,1000,2000,5000,10000]
 
-normvars_PprodAsweep = np.zeros([4,6,1001])
-for file in os.listdir(PROJECT_DIR / 'satprod/time_PprodAsweep'):  
-    index = int(file.split('_')[3].split('.')[0])
+with open(PROJECT_DIR / 'satprod/time_PprodAsweep/satprod_time_PprodAsweep/satprod_time_PprodAsweep.pickle','rb') as f:
+    time_PprodAsweep_PprodAs, time_PprodAsweep_results = pickle.load(f)
+normvars_PprodAsweep = time_PprodAsweep_results['normvar']
 
-    filepath = os.path.join(PROJECT_DIR / 'satprod/time_PprodAsweep', file)
-    with open(filepath,'rb') as f:
-        normvar = pickle.load(f)
-    normvars_PprodAsweep[index] = normvar
+with open(PROJECT_DIR / 'satprod/time_kcatAsweep/satprod_time_kcatAsweep/satprod_time_kcatAsweep.pickle','rb') as f:
+    time_kcatAsweep_kcatAs, time_kcatAsweep_results = pickle.load(f)
+normvars_kcatAsweep = time_kcatAsweep_results['normvar']
 
-normvars_kcatAsweep = np.zeros([4,6,1001])
-for file in os.listdir(PROJECT_DIR / 'satprod/time_kcatAsweep'):  
-    index = int(file.split('_')[3].split('.')[0])
-
-    filepath = os.path.join(PROJECT_DIR / 'satprod/time_kcatAsweep', file)
-    with open(filepath,'rb') as f:
-        normvar = pickle.load(f)
-    normvars_kcatAsweep[index] = normvar
-
-with open(PROJECT_DIR / 'satprod/time_Tccsweep/satprod_time_Tccsweep_0.pickle','rb') as f:
-    normvar_Tccweep_0 = pickle.load(f)
-with open(PROJECT_DIR / 'satprod/time_Tccsweep/satprod_time_Tccsweep_1.pickle','rb') as f:
-    normvar_Tccweep_1 = pickle.load(f)
-with open(PROJECT_DIR / 'satprod/time_Tccsweep/satprod_time_Tccsweep_2.pickle','rb') as f:
-    normvar_Tccweep_2 = pickle.load(f)
-with open(PROJECT_DIR / 'satprod/time_Tccsweep/satprod_time_Tccsweep_3.pickle','rb') as f:
-    normvar_Tccweep_3 = pickle.load(f)
+with open(PROJECT_DIR / 'satprod/time_Tccsweep/satprod_time_Tccsweep/satprod_time_Tccsweep.pickle','rb') as f:
+    Tccs, time_Tccsweep_results = pickle.load(f)
+normvar_Tccweep_0, normvar_Tccweep_1, normvar_Tccweep_2, normvar_Tccweep_3 = time_Tccsweep_results['normvar']
 
 #%% Figure S08 (Duration sweep): Plot 
 
@@ -1652,7 +1636,7 @@ ax.hlines(0,0,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth)
 ax.plot(np.linspace(0,Tccs[0]*10,len(normvar_Tccweep_0[0])),normvar_Tccweep_0[0],linewidth=plotWidth,label='$T_{cc}$=' + str(Tccs[0]),color=plt.cm.winter(0/4))
 ax.plot(np.linspace(0,Tccs[1]*10,len(normvar_Tccweep_1[0])),normvar_Tccweep_1[0],linewidth=plotWidth,label='$T_{cc}$=' + str(Tccs[1]),color=plt.cm.winter(1/4))
 ax.plot(np.linspace(0,Tccs[2]*10,len(normvar_Tccweep_2[0])),normvar_Tccweep_2[0],linewidth=plotWidth,label='$T_{cc}$=' + str(Tccs[2]),color=plt.cm.winter(2/4))
-ax.plot(np.linspace(0,Tccs[3]*10,len(normvar_Tccweep_3[0])),normvar_Tccweep_3[0],linewidth=plotWidth,label='$T_{cc}$=' + str(Tccs[2]),color=plt.cm.winter(3/4))
+ax.plot(np.linspace(0,Tccs[3]*10,len(normvar_Tccweep_3[0])),normvar_Tccweep_3[0],linewidth=plotWidth,label='$T_{cc}$=' + str(Tccs[3]),color=plt.cm.winter(3/4))
 ax.legend(frameon=0,fontsize=tickFontSize,loc='upper left',bbox_to_anchor=[0.2,0.6,.5,.5])
 ax.set_xlim([0,50000])
 ax.set_ylim([-.2,1])
