@@ -590,28 +590,15 @@ cdGpathway = img.imread(PROJECT_DIR / 'graphics/ngigraphic17.png') # version wit
 
 with open(PROJECT_DIR / 'diffTF/diffTF_time/diffTF_time.pickle','rb') as f:
     results_diffTF = pickle.load(f)
-normvar_diffTF = results_diffTF[0]['normvar'][0]
+normvar_diffTF = results_diffTF['normvar'][0]
 
-#TODO: after running figure_05/cdg_time.py, update the path to the new cdG data
-# Old data 
-with open(PROJECT_DIR / 'cdg/cdg_time.pickle','rb') as f:
-    normvar_cdg = pickle.load(f)
+with open(PROJECT_DIR / 'cdg/cdg_time/cdg_time.pickle','rb') as f:
+    results_cdg = pickle.load(f)
+normvar_cdg = results_cdg['normvar'][0]
 
-# New data 
-# with open(PROJECT_DIR / 'cdg/cdg_time/cdg_time.pickle','rb') as f:
-#     results_cdg = pickle.load(f)
-# normvar_cdg = results_cdg['normvar']
-
-# TODO: after running figure_05/tcs_time.py, update the path to the new TCS data
-# Old Data
-with open(PROJECT_DIR / 'tcs/motifs_tcs3.pickle','rb') as f:
+with open(PROJECT_DIR / 'tcs/tcs_time/tcs_time.pickle','rb') as f:
     results_tcs = pickle.load(f)
-
-# New Data
-# with open(PROJECT_DIR / 'tcs/tcs_time/tcs_time.pickle','rb') as f:
-#     results_tcs = pickle.load(f)
-# normvar_tcs = results_tcs['normvar'][0]
-
+normvar_tcs = results_tcs['normvar'][0]
 
 #%% Figure 5 (Full Pathways): Plot 
 
