@@ -1140,8 +1140,6 @@ plt.show()
 
 #%% Figure S5 (Saturated Production Amplification Factor 2D): pull data 
 
-#TODO: run after running figure_S05/prodsat_sweep_kcatA_Tcc.py 
-
 def normdvar(kT):
     return 20/9*kT/(3+20/9*kT)
 
@@ -1149,25 +1147,7 @@ with open(PROJECT_DIR / 'satprod/prodsat_sweep_kcatA_Tcc/prodsat_sweep_kcatA_Tcc
     kcatAs,Tccs,results = pickle.load(f)
 
 model = normdvar(np.outer(kcatAs, Tccs))
-
-
-#normvarBs = np.zeros([len(prodAs),len(kcatAs),len(Tccs)])
-
-# for i in range(len(model)):
-#     for j in range(len(model[i])):
-#             model[i,j] = normdvar(kcatAs[i]*Tccs[j])
-
-# for file in os.listdir(PROJECT_DIR / 'prodsat_sweep/sweep1'):
-    
-#     prodAindex = int(file.split('_')[4])
-#     kcatAindex = int(file.split('_')[6].split('.')[0])
-    
-#     filepath = os.path.join(PROJECT_DIR / 'prodsat_sweep/sweep1', file)
-#     with open(filepath,'rb') as f:
-#         prodA,kcatA,Tccs,divStates,dsis,drnd = pickle.load(f)
-
-#     normvarBs[prodAindex,kcatAindex] = 1-np.var(dsis[:,:,1],axis=1)/np.var(drnd[:,:,1],axis=1)
-
+normvarBs_kcatA_Tcc = results['normvar'][:,:,1].T   # (kcatA, Tcc), same orientation as model
 
 #%% Figure S5 (Saturated Production Amplification Factor 2D): plot 
 
@@ -1192,7 +1172,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 
 f.text(0.45,0.89,'B',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[0:1,1:2])
-im = ax.imshow(normvarBs[0],origin='lower',cmap='inferno',vmin=-.2,vmax=1)
+im = ax.imshow(normvarBs_kcatA_Tcc,origin='lower',cmap='inferno',vmin=-.2,vmax=1)
 ax.set_title('Simulation',fontsize=axisFontSize)
 ax.spines['left'].set_linewidth(tickWidth)
 ax.spines['bottom'].set_linewidth(tickWidth)
@@ -1217,8 +1197,10 @@ plt.show()
 
 prod_fixedB = img.imread(PROJECT_DIR / 'graphics/ngigraphic70.png')
 
-with open(PROJECT_DIR / 'fixed_reactant/fixedReactant4.pickle','rb') as f:
-    means_pA,variances_pA,vardSis_pA,vardRnd_pA,normvars_pA = pickle.load(f)
+with open(PROJECT_DIR / 'fixed_reactant/fixedreactant_sweep_PprodA/fixedreactant_sweep_PprodA.pickle','rb') as f:
+    (fixedreactant_PprodAs, fixedreactant_PprodBs), fixedreactant_PprodA_results = pickle.load(f)
+means_pA = fixedreactant_PprodA_results['means']
+normvars_pA = fixedreactant_PprodA_results['normvar']
 
 Tcc = 1000
 kcatA = 10**-1
@@ -1229,10 +1211,12 @@ prodColors2 = np.transpose(np.array((np.linspace(prodColorRange[0][0],prodColorR
                                     np.linspace(prodColorRange[0][1],prodColorRange[1][1],3),
                                     np.linspace(prodColorRange[0][2],prodColorRange[1][2],3))))
 
-with open(PROJECT_DIR / 'fixed_reactant/fixedReactant5.pickle','rb') as f:
-    means_kA,variances_kA,vardSis_kA,vardRnd_kA,normvars_kA = pickle.load(f)
+with open(PROJECT_DIR / 'fixed_reactant/fixedreactant_sweep_kcatA/fixedreactant_sweep_kcatA.pickle','rb') as f:
+    (fixedreactant_kcatAs, fixedreactant_PprodBs), fixedreactant_kcatA_results = pickle.load(f)
+means_kA = fixedreactant_kcatA_results['means']
+normvars_kA = fixedreactant_kcatA_results['normvar']
 
-kcatAs = np.logspace(-2,2,5)
+kcatAs = np.array(fixedreactant_kcatAs)
 kcatColors = np.transpose(np.array((np.linspace(255/255,231/255,5),
                                     np.linspace(184/255,117/255,5),
                                     np.linspace(98/255,78/255,5))))
