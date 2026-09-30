@@ -1,4 +1,7 @@
 # Fixed Reactant: sweep PprodA and PprodB
+import os
+import multiprocessing as mp
+from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime 
 import numpy as np 
 from las_model.utils.fixedreactant import simulate_fixed_reactant
@@ -20,54 +23,61 @@ metadata = {
     'Km': 10**3,
 }
 
-# Pin random seed 
-rng = np.random.default_rng(seed=metadata['seed'])
+def _simulate_single_pprodA_pprodB(task_args):
+    """Worker task simulating one (PprodA, PprodB) pair."""
+    PprodA, PprodB, meta, seed = task_args
+    task_rng = np.random.default_rng(seed)
 
-# Accumulate results
-results = {
-    'means': [],
-    'variances': [],
-    'dsis': [],
-    'drnd': [],
-    'vardsis': [],
-    'vardrnd': [],
-    'normvar': [],
-}
+    print(f"Running simulation for PprodA={PprodA}, PprodB={PprodB}")
 
-for PprodA in metadata['PprodAs']:
-    for PprodB in metadata['PprodBs']:
+    means, variances, motherMolecules = simulate_fixed_reactant(
+        PprodA, PprodB, meta['kcatA'], meta['Km'], meta['Tcc'], meta['nCells'], task_rng)
 
-        print(f"Running simulation for PprodA={PprodA}, PprodB={PprodB}")
+    # Division differences from the mother states 
+    dsis, drnd, vardsis, vardrnd, normvar = calculate_division_differences(motherMolecules, task_rng)
 
-        molecules, volume, times, motherMolecules = simulate_fixed_reactant(
-            PprodA, PprodB, metadata['kcatA'], metadata['Km'], metadata['Tcc'], metadata['nCells'], rng)
+    return {
+        'means': means,
+        'variances': variances,
+        'dsis': dsis,
+        'drnd': drnd,
+        'vardsis': vardsis,
+        'vardrnd': vardrnd,
+        'normvar': normvar,
+    }
 
-        # Molecule concentration statistics 
-        means = np.mean(molecules/volume,axis=1)
-        variances = np.var(molecules/volume,axis=1)
+if __name__ == '__main__':
+    # Pin random seed and generate statistically independent seeds per task
+    nPprodA, nPprodB = len(metadata['PprodAs']), len(metadata['PprodBs'])
+    master_rng = np.random.default_rng(seed=metadata['seed'])
+    seeds = master_rng.integers(0, 2**63 - 1, size=nPprodA * nPprodB)
 
-        # Division differences from the mother states 
-        dsis, drnd, vardsis, vardrnd, normvar = calculate_division_differences(motherMolecules,rng)
+    # PprodA outer, PprodB inner, so the flat task order maps onto the (PprodA, PprodB) grid below
+    tasks = [
+        (PprodA, PprodB, metadata, seeds[i * nPprodB + j])
+        for i, PprodA in enumerate(metadata['PprodAs'])
+        for j, PprodB in enumerate(metadata['PprodBs'])
+    ]
 
-        # Store results
-        results['means'].append(means)
-        results['variances'].append(variances)
-        results['dsis'].append(dsis)
-        results['drnd'].append(drnd)
-        results['vardsis'].append(vardsis)
-        results['vardrnd'].append(vardrnd)
-        results['normvar'].append(normvar)
+    num_workers = min(os.cpu_count() or 4, len(tasks))
+    print(f"Running sweep across {len(tasks)} (PprodA, PprodB) conditions using {num_workers} parallel workers...")
 
-# Stack results into a (PprodA, PprodB, ...) grid 
-nPprodA, nPprodB = len(metadata['PprodAs']), len(metadata['PprodBs'])
-results = {k: np.stack(v,axis=0) for k, v in results.items()}
-results = {k: v.reshape(nPprodA, nPprodB, *v.shape[1:]) for k, v in results.items()}
+    ctx = mp.get_context('fork')
+    with ProcessPoolExecutor(max_workers=num_workers, mp_context=ctx) as executor:
+        sweep_results = list(executor.map(_simulate_single_pprodA_pprodB, tasks))
 
-# Save results 
-exp_dir = save_experiment(
-    experiment_name=metadata['experiment_name'],
-    data = [[metadata['PprodAs'],metadata['PprodBs']],results],
-    metadata=metadata,
-    base_dir=PROJECT_DIR / metadata['experiment_directory']
-)
-print(f"Experiment saved to {exp_dir}")
+    # Stack results into a (PprodA, PprodB, ...) grid 
+    results = {
+        k: np.stack([res[k] for res in sweep_results], axis=0)
+        for k in sweep_results[0].keys()
+    }
+    results = {k: v.reshape(nPprodA, nPprodB, *v.shape[1:]) for k, v in results.items()}
+
+    # Save results 
+    exp_dir = save_experiment(
+        experiment_name=metadata['experiment_name'],
+        data=[[metadata['PprodAs'], metadata['PprodBs']], results],
+        metadata=metadata,
+        base_dir=PROJECT_DIR / metadata['experiment_directory']
+    )
+    print(f"Experiment saved to {exp_dir}")
