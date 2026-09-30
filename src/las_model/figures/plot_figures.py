@@ -2251,7 +2251,9 @@ def expDecay(x,tau,x0):
 
 radii = np.linspace(1,9,9)
 plotradii = np.linspace(0,9,100)
-times = np.linspace(0,10,101)
+moranI_timestep = 100          # sampling interval of cascade_spatial_moranI.py 
+Tcc_cascade_spatial = 1000
+times = np.arange(morIs_discdist.shape[2]) * moranI_timestep / Tcc_cascade_spatial   # generations 
 
 f = plt.figure(figsize=(16,8))
 gs = GridSpec(3,5,figure=f,wspace=0.5,hspace=0.3)
