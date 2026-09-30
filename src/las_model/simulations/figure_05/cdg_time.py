@@ -48,7 +48,7 @@ motherCell.run(metadata['nCells'])
 
 # Get mother states and calculate division differences 
 divStates = motherCell.getMotherStates()
-dsis, drnd, vardsis, vardrnd, normvar = calculate_offspring_similarity_time(divStates,rng)
+dsis, drnd, vardsis, vardrnd, normvar = calculate_offspring_similarity_time(motherCell,metadata,rng)
 
 # Store results
 results['dsis'].append(dsis)
@@ -63,7 +63,7 @@ results = {k: np.stack(v,axis=0) for k, v in results.items()}
 # Save results 
 exp_dir = save_experiment(
     experiment_name=metadata['experiment_name'],
-    data = [results],
+    data = results,
     metadata=metadata,
     base_dir=PROJECT_DIR / metadata['experiment_directory']
 )
