@@ -2684,14 +2684,17 @@ def calcProdRate(A,B,kcatA,Km):
 
 prod = img.imread(PROJECT_DIR / 'graphics/ngigraphic68.png')
 
-with open(PROJECT_DIR / 'orderAnalysis/calcOrder4.pickle','rb') as f:
-   substrateMean,substrateVar,substrateLow,substrateHigh,substrateDrnd,substrateDsis,substrateSim,enzymeMean,enzymeVar,enzymeDrnd,enzymeDsis,enzymeSim,productMean,productVar,productDrnd,productDsis,productSim,orderMean,orderStd = pickle.load(f)
+# produnsat molecules: 0 the reactant B', 1 the enzyme A, 2 the product B 
+with open(PROJECT_DIR / 'orderAnalysis/produnsat_order_sweep_PprodB/produnsat_order_sweep_PprodB.pickle','rb') as f:
+    PprodBs, order_sweep_results = pickle.load(f)
+PprodBs = np.array(PprodBs)
+substrateMean = order_sweep_results['means'][:,0]
+substrateVar = order_sweep_results['variances'][:,0]
+enzymeMean = order_sweep_results['means'][:,1]
+orderMean = np.nanmean(order_sweep_results['order'],axis=1)     # reaction order over the trajectory, per PprodB
+orderStd = np.nanstd(order_sweep_results['order'],axis=1)
 
-# nCells = 1000
-# Tcc = 1000
-# PprodA = 10**-1
 kcatA = 10**-1
-PprodBs = np.logspace(-2,4,31)
 Km = 10**3
 
 #%% Figure S21 (Reactant Similarity): Plot 
@@ -2771,7 +2774,7 @@ ax.tick_params(axis='both',which='minor',length=tickLength/2,width=tickWidth/2,l
 f.text(0.73,0.87,'D',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[0,3])
 ax.vlines(10**0,-10,10**10,color='k',linestyle='dashed',zorder=0)
-ax.scatter(substrateMean/Km,calcProdRate(substrateMean,enzymeMean,kcatA,Km)/PprodBs[0:27],color=signalColor)
+ax.scatter(substrateMean/Km,calcProdRate(substrateMean,enzymeMean,kcatA,Km)/PprodBs,color=signalColor)
 ax.set_xscale('log')
 ax.set_xlabel('Saturation Ratio\n($[B\']_{eq}/K_M$)',fontsize=axisFontSize)
 ax.set_xticks(np.logspace(-3,3,4))
