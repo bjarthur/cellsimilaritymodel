@@ -19,6 +19,7 @@ List of required software and versions:
 - numpy>=2.3.4
 - opencv-python>=4.11.0.86
 - scipy>=1.16.2
+- Roboto font (optional, used for the figure panel labels; see `docs/setup.md`)
 
 ## Installation
 See setup.md file in `/docs` 

@@ -71,3 +71,28 @@ python -c "from utils.config import PROJECT_DIR; print(f'Project directory: {PRO
 ```
 
 You should see your configured project directory path printed to the console.
+
+### 6. Install the Roboto Font (optional)
+The figure script `src/las_model/figures/plot_figures.py` labels its panels with the Roboto font. If Roboto is not installed, matplotlib falls back to DejaVu Sans and prints a warning for every label:
+```
+findfont: Font family 'roboto' not found.
+```
+The figures still render; only the panel letters look different. To install the font:
+
+1. Download the Roboto family (Apache License 2.0) from Google Fonts: https://fonts.google.com/specimen/Roboto
+2. Install the `.ttf` files:
+   - **macOS:** open each file and click *Install* in Font Book, or copy them to `~/Library/Fonts/`.
+   - **Linux:** copy them to `~/.local/share/fonts/` and run `fc-cache -f`.
+   - **Windows:** right-click each file and choose *Install*.
+3. Delete matplotlib's cached font list so it rescans the system fonts on the next run:
+   ```bash
+   # macOS
+   rm ~/.matplotlib/fontlist-*.json
+   # Linux
+   rm ~/.cache/matplotlib/fontlist-*.json
+   ```
+4. Verify that matplotlib can see the font:
+   ```bash
+   python -c "from matplotlib import font_manager; print(sorted({f.name for f in font_manager.fontManager.ttflist if 'Roboto' in f.name}))"
+   ```
+   This should print a list containing `'Roboto'`.
