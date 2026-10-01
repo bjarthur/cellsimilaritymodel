@@ -1699,17 +1699,11 @@ plt.show()
 
 proddeg = img.imread(PROJECT_DIR / 'graphics/ngigraphic51.png')
 
-normvars = np.zeros([20,6,1001])
-Rkcats = np.zeros(20)
-for file in os.listdir(PROJECT_DIR / 'prodanddeg/Rkcatsweep2'):
-    index = int(file.split('_')[1].split('.')[0])
-    
-    filepath = os.path.join(PROJECT_DIR / 'prodanddeg/Rkcatsweep2', file)
-    with open(filepath,'rb') as f:
-        kcatA,kcatB,normvar = pickle.load(f)
-    
-    normvars[index] = normvar
-    Rkcats[index] = kcatB/kcatA
+with open(PROJECT_DIR / 'prodanddeg/proddeg_rkcat_sweep/proddeg_rkcat_sweep.pickle','rb') as f:
+    Rkcat_sweep_values, Rkcat_sweep_results = pickle.load(f)
+
+normvars = Rkcat_sweep_results['normvar']
+Rkcats = np.array(Rkcat_sweep_values['kcatBs'])/np.array(Rkcat_sweep_values['kcatAs'])
 
 colors = np.ones([len(Rkcats),4])
 colors[:,0] = np.linspace(112/255,52/255,len(Rkcats))
