@@ -1033,67 +1033,31 @@ ax2.spines['bottom'].set_linewidth(tickWidth)
 
 #%% Figure S4 (Saturated Production, kcat and Tcc sweep, full): pull data
 
-# TODO: run after running Tcc_high_sweep
-
 def normdvar(kT):
     return 20/9*kT/(3+20/9*kT)
 
-os.chdir('//prfs.hhmi.org/sgrolab/mark/comp_proj/graphics')
 satprod = img.imread(PROJECT_DIR / 'graphics/ngigraphic56.png')
-prod_fixedB = img.imread(PROJECT_DIR / 'graphics/ngigraphic70.png')
 
-# Old Data 
-# with open(PROJECT_DIR / 'analyticalData/motifs_prodsat_sweepdata_reduced.pickle','rb') as f:
-#     Tccs,Tccvar_dsis,Tccvar_drnd,kcats,kcatvar_dsis,kcatvar_drnd = pickle.load(f)
-# kcatMrange = np.logspace(-4,0,61)
-# Tccrange = np.logspace(2,4,11)
-# kcat = 0.01
-# Pprod = 0.01
-# Tcc = 1000
-# kTrange = np.logspace(-2,7,41)
-
-# kcatA2_kcats = np.zeros(13)
-# kcatA2_normvarBs = np.zeros(13)
-# for file in os.listdir(PROJECT_DIR / 'prodsat_sweep/prodsat_kcatsweep'):
-#     kcatAindex = int(file.split('_')[3].split('.')[0])
-    
-#     filepath = os.path.join(PROJECT_DIR / 'prodsat_sweep/prodsat_kcatsweep', file)
-#     with open(filepath,'rb') as f:
-#         kcatA,normvarA,normvarB = pickle.load(f)
-    
-#     kcatA2_kcats[kcatAindex] = kcatA
-#     kcatA2_normvarBs[kcatAindex] = normvarB
-
-# Tccs2_Tcc = np.zeros(5)
-# Tccs2_normvarBs = np.zeros(5)
-# for file in os.listdir(PROJECT_DIR / 'prodsat_sweep/prodsat_Tccsweep'):
-#     Tccindex = int(file.split('_')[3].split('.')[0])
-    
-#     filepath = os.path.join(PROJECT_DIR / 'prodsat_sweep/prodsat_Tccsweep', file)
-#     with open(filepath,'rb') as f:
-#         Tcc_val,normvarA,normvarB = pickle.load(f)
-    
-#     Tccs2_Tcc[Tccindex] = Tcc_val
-#     Tccs2_normvarBs[Tccindex] = normvarB
-
-
-
-# New Data 
-kcat = 10**-1
-Tcc = 1000
+Tcc = 1000                      # Tcc of both kcat sweeps 
+kcatA_Tcc_low_sweep = 10**-2    # kcatA of the low and high Tcc sweeps 
+kcatA_Tcc_high_sweep = 10**-1
+kTrange = np.logspace(-2,7,41)
 
 with open(PROJECT_DIR / 'satprod/prodsat_sweep_kcat_low/prodsat_sweep_kcat_low/prodsat_sweep_kcat_low.pickle','rb') as f:
     kcatA_low_sweep_kcatAs, kcatA_low_sweep_results = pickle.load(f)
-
-with open(PROJECT_DIR / 'satprod/prodsat_sweep_Tcc_low/prodsat_sweep_Tcc_low.pickle','rb') as f:
-    Tcc_low_sweep_Tccs, Tcc_low_sweep_results = pickle.load(f)
+kcatA_low_sweep_kcatAs = np.array(kcatA_low_sweep_kcatAs)
 
 with open(PROJECT_DIR / 'satprod/prodsat_sweep_kcat_high/prodsat_sweep_kcat_high.pickle','rb') as f:
     kcatA_high_sweep_kcatAs, kcatA_high_sweep_results = pickle.load(f)
 kcatA_high_sweep_kcatAs = np.array(kcatA_high_sweep_kcatAs)
 
-# with open(PROJECT_DIR / 'satprod/prodsat_sweep_Tcc_high/prodsat_sweep_Tcc_high.pickle','rb') as f:
-#     Tcc_high_sweep_Tccs, Tcc_high_sweep_results = pickle.load(f)
+with open(PROJECT_DIR / 'satprod/prodsat_sweep_Tcc_low/prodsat_sweep_Tcc_low.pickle','rb') as f:
+    Tcc_low_sweep_Tccs, Tcc_low_sweep_results = pickle.load(f)
+Tcc_low_sweep_Tccs = np.array(Tcc_low_sweep_Tccs)
+
+with open(PROJECT_DIR / 'satprod/prodsat_sweep_Tcc_high/prodsat_sweep_Tcc_high.pickle','rb') as f:
+    Tcc_high_sweep_Tccs, Tcc_high_sweep_results = pickle.load(f)
+Tcc_high_sweep_Tccs = np.array(Tcc_high_sweep_Tccs)
 
 #%% Figure S4 (Saturated Production, kcat and Tcc sweep, full): plot 
 
@@ -1110,8 +1074,8 @@ ax = f.add_subplot(gs[0,1])
 ax.vlines(27/20,-.2,1,color='gray',linestyle=(0, (8, 8)),zorder=0)
 ax.hlines(0,0,2*10**6,color='k',linestyle='dashed',linewidth=plotWidth,zorder=0)
 ax.plot(kTrange,normdvar(kTrange),color='k',linewidth=plotWidth,zorder=1,label='Analytical')
-ax.scatter(np.array(Tcc_low_sweep_Tccs)*10**-2,Tcc_low_sweep_results['normvar'][:,1],color=TccSweepColor,label='$T_{cc}$ sweep',marker='s')
-ax.scatter(Tcc_high_sweep_Tccs*10**-1,Tcc_high_sweep_results['normvar'][:,1],color=TccSweepColor2,label='$T_{cc}$ sweep 2',marker='+')
+ax.scatter(Tcc_low_sweep_Tccs*kcatA_Tcc_low_sweep,Tcc_low_sweep_results['normvar'][:,1],color=TccSweepColor,label='$T_{cc}$ sweep',marker='s')
+ax.scatter(Tcc_high_sweep_Tccs*kcatA_Tcc_high_sweep,Tcc_high_sweep_results['normvar'][:,1],color=TccSweepColor2,label='$T_{cc}$ sweep 2',marker='+')
 ax.scatter(kcatA_low_sweep_kcatAs*Tcc,kcatA_low_sweep_results['normvar'][:,1],color=kcatColor,label='$k_{cat}$ sweep',marker='s')
 ax.scatter(kcatA_high_sweep_kcatAs*Tcc,kcatA_high_sweep_results['normvar'][:,1],color=kcatColor2,label='$k_{cat}$ sweep 2',marker='+')
 ax.legend(frameon=0,fontsize=14,loc='upper left',bbox_to_anchor=[0.45,0.32,.5,.5])
