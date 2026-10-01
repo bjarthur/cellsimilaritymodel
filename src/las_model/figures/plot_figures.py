@@ -2568,22 +2568,31 @@ ax.axis('off')
 
 #%% Figure S20 (Phosphorylation Monocycles): pull data 
 
-os.chdir('//prfs.hhmi.org/sgrolab/mark/comp_proj/graphics')
 pathway = img.imread(PROJECT_DIR / 'graphics/ngigraphic69.png')
 a_slider = img.imread(PROJECT_DIR / 'graphics/a_slider.png')
 
-with open(PROJECT_DIR / 'phos_cycle/phoscycle2.pickle','rb') as f:
-    prodAs_MA,prodBs_MA,Aeqs_MA,Beqs_MA,Ceqs_MA,Deqs_MA,varAs_MA,varBs_MA,varCs_MA,varDs_MA,normvarAs_MA,normvarBs_MA,normvarCs_MA,normvarDs_MA = pickle.load(f)
+# phos_cycle and phos_sat molecules: 0 the kinase A, 1 the unphosphorylated substrate B', 
+# 2 the phosphatase C, 3 the phosphorylated substrate B 
+with open(PROJECT_DIR / 'phos_cycle/phoscycle_sweep_PprodA_PprodB/phoscycle_sweep_PprodA_PprodB.pickle','rb') as f:
+    phoscycle_PprodAs, phoscycle_PprodBs, phoscycle_results = pickle.load(f)
+substrate_MA = phoscycle_results['means'][:,:,1] + phoscycle_results['means'][:,:,3]     # [B'] + [B], rows are PprodA
+normvarB_MA = phoscycle_results['normvar'][:,:,3]
 
 prodColorRange = [enzymeColor,[68/255,10/255,21/255]]
-prodColors = np.transpose(np.array((np.linspace(prodColorRange[0][0],prodColorRange[1][0],len(prodAs_MA)),
-                                    np.linspace(prodColorRange[0][1],prodColorRange[1][1],len(prodAs_MA)),
-                                    np.linspace(prodColorRange[0][2],prodColorRange[1][2],len(prodAs_MA)),
-                                    np.linspace(1,1,len(prodAs_MA)))))
+prodColors = np.transpose(np.array((np.linspace(prodColorRange[0][0],prodColorRange[1][0],len(phoscycle_PprodAs)),
+                                    np.linspace(prodColorRange[0][1],prodColorRange[1][1],len(phoscycle_PprodAs)),
+                                    np.linspace(prodColorRange[0][2],prodColorRange[1][2],len(phoscycle_PprodAs)),
+                                    np.linspace(1,1,len(phoscycle_PprodAs)))))
 prodColorMap = ListedColormap(prodColors)
 
-with open(PROJECT_DIR/'satphos/satphos3.pickle','rb') as f:
-    prodBs_MM,kms_MM,Aeqs_MM,Beqs_MM,Ceqs_MM,Deqs_MM,varAs_MM,varBs_MM,varCs_MM,varDs_MM = pickle.load(f)
+with open(PROJECT_DIR / 'phos_sat/phossat_sweep_PprodB_Km/phossat_sweep_PprodB_Km.pickle','rb') as f:
+    phossat_PprodBs, phossat_Kms, phossat_results = pickle.load(f)
+phossat_PprodBs = np.array(phossat_PprodBs)
+phossat_Kms = np.array(phossat_Kms)
+# transposed so rows are Km and columns PprodB, which is how the plot loops over them 
+substrate_MM = (phossat_results['means'][:,:,1] + phossat_results['means'][:,:,3]).T
+normvarB_MM = phossat_results['normvar'][:,:,3].T
+A_MM = phossat_results['means'][:,:,0].T
 
 #%% Figure S20 (Phosphorylation Monocycles): plot 
 
@@ -2602,9 +2611,12 @@ f.text(0.27,0.91,'B',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[0:1,1:2])
 ax.set_title('Mass-Action Kinetics',fontsize=axisFontSize)
 ax.hlines(0,10**-5,10**6,color='k',linestyle='dashed',linewidth=plotWidth)
-for i in range(len(prodAs_MA)):
-    ax.scatter(Beqs_MA[i]+Deqs_MA[i],normvarDs_MA[i],color=prodColorMap(i/len(prodAs_MA)))
-    params,cov = curve_fit(logFit,Beqs_MA[i]+Deqs_MA[i],normvarDs_MA[i],p0=[1,100,1])
+for i in range(len(phoscycle_PprodAs)):
+    ax.scatter(substrate_MA[i],normvarB_MA[i],color=prodColorMap(i/len(phoscycle_PprodAs)))
+    try:
+        params,cov = curve_fit(logFit,substrate_MA[i],normvarB_MA[i],p0=[1,100,1])
+    except RuntimeError:    # LAS stays near zero at low enzyme, nothing for the logistic to fit 
+        continue
     ax.plot(np.logspace(-1,6,100),logFit(np.logspace(-1,6,100),params[0],params[1],params[2]),linestyle='dotted',color=prodColors[i])
 ax.set_xscale('log')
 ax.set_xlim([0.8*10**0,1.2*10**5])
@@ -2631,10 +2643,13 @@ f.text(0.65,0.91,'C',fontsize=letterLabelSize,fontname='roboto')
 ax = f.add_subplot(gs[0:1,2:3])
 ax.set_title('Enzyme Kinetics',fontsize=axisFontSize)
 ax.hlines(0,10**-5,10**6,color='k',linestyle='dashed',linewidth=plotWidth)
-for i in range(len(kms_MM)):
-    ax.scatter(Beqs_MM[i]+Deqs_MM[i],varDs_MM[i],color=plt.cm.bwr((np.log10(Aeqs_MM[i,0]/kms_MM[i,0])+2)/4))
-    params,cov = curve_fit(logFit,prodBs_MM[i,0:-3]*1000,varDs_MM[i,0:-3],p0=[1,1,1])
-    ax.plot(np.logspace(-1,6,100),logFit(np.logspace(-1,6,100),params[0],params[1],params[2]),linestyle='dotted',color=plt.cm.bwr((np.log10(Aeqs_MM[i,0]/kms_MM[i,0])+2)/4))
+for i in range(len(phossat_Kms)):
+    ax.scatter(substrate_MM[i],normvarB_MM[i],color=plt.cm.bwr((np.log10(A_MM[i,0]/phossat_Kms[i])+2)/4))
+    try:
+        params,cov = curve_fit(logFit,phossat_PprodBs[0:-3]*1000,normvarB_MM[i,0:-3],p0=[1,1,1])
+    except RuntimeError:
+        continue
+    ax.plot(np.logspace(-1,6,100),logFit(np.logspace(-1,6,100),params[0],params[1],params[2]),linestyle='dotted',color=plt.cm.bwr((np.log10(A_MM[i,0]/phossat_Kms[i])+2)/4))
 ax.set_xscale('log')
 ax.set_xlim([8*10**0,4*10**5])
 ax.set_ylim([-.2,1.05])
