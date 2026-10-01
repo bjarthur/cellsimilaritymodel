@@ -70,7 +70,8 @@ def plot_normvar_comparison(burstSizes,normvar):
 
 
 if __name__=='__main__':
-    with open(PROJECT_DIR / 'satprod_burst_time/satprod_burst_time_sweep.pickle','rb') as f:
-        burstSizes,vardsis,vardrnd,normvar = pickle.load(f)
+    with open(PROJECT_DIR / 'satprod/satprod_burst_time_sweep/satprod_burst_time_sweep.pickle','rb') as f:
+        burstSizes, results = pickle.load(f)
+    normvar = results['normvar']
     
     plot_normvar_comparison(burstSizes,normvar)
