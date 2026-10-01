@@ -1,106 +1,63 @@
-# Sat prod effect of bursting on LAS duration experiment  
-import pickle
+# Saturated Production: effect of bursting on LAS duration 
+from datetime import datetime 
 import numpy as np 
 from las_model.utils import motiffunc as mf
 from las_model.utils.config import PROJECT_DIR
+from las_model.utils.analyze import calculate_offspring_similarity_time
+from las_model.utils.output import save_experiment 
+
+# Experiment metadata 
+metadata = {
+    'experiment_name': 'satprod_burst_time',
+    'experiment_directory': 'satprod',
+    'created': datetime.now().isoformat(),
+    'seed': 1000,
+    'nCells': 1000,
+    'nCells_equilibrium': 10,
+    'nCycles': 10,
+    'Tcc': 1000,
+    'varTcc': 0,
+    'circuit': 'prodsat',
+    'circuit_burst': 'prodsat_burst',
+    'PprodA': 10**-2,
+    'kcatA': 10**-1,
+    'burstSize': 10,
+}
 
 # Pin random seed 
-rng = np.random.default_rng(seed=1000)
+rng = np.random.default_rng(seed=metadata['seed'])
 
-# Initialize cell parameters 
-Tcc = 1000
-circuit = 'prodsat'
-prodA = 10**-2
-kcatA = 10**-1
-burstSize = 10
-prodA_with_bursting = prodA/burstSize 
+# The bursting cell makes bursts of burstSize molecules at PprodA / burstSize, so the mean production is unchanged 
+conditions = {
+    'no_burst': (metadata['circuit'], [metadata['PprodA'], metadata['kcatA']]),
+    'burst': (metadata['circuit_burst'], [metadata['PprodA'] / metadata['burstSize'], metadata['kcatA'], metadata['burstSize']]),
+}
 
-# Set simulation parameters 
-nCells = 1000
-nCycles_equilibrate = 10
-nCycles = 10
+results = {}
+for condition, (circuit, params) in conditions.items():
 
-# ================== Non-burst Cell ==========================
+    print(f"Simulating {condition} mother cell")
 
-# Initialize mother Cell 
-motherCell_no_burst = mf.Cell(Tcc,0)
-motherCell_no_burst.parameterize(circuit,[prodA,kcatA])
-motherCell_no_burst.equilibrate(nCycles_equilibrate)
+    # Initialize and run mother cell 
+    motherCell = mf.Cell(metadata['Tcc'], metadata['varTcc'], rng)
+    motherCell.parameterize(circuit, params)
+    motherCell.equilibrate(metadata['nCells_equilibrium'])
+    motherCell.run(metadata['nCells'])
 
-# Run simulation 
-motherCell_no_burst.run(nCells)
+    # Offspring similarity over time 
+    dsis, drnd, vardsis, vardrnd, normvar = calculate_offspring_similarity_time(motherCell, metadata, rng)
 
-# Save mother cell state 
-divStates_no_burst = motherCell_no_burst.getMotherStates()
+    results[condition] = {
+        'vardsis': vardsis,
+        'vardrnd': vardrnd,
+        'normvar': normvar,
+    }
 
-# ================== Bursting Cell ===========================
-motherCell_burst = mf.Cell(Tcc,0)
-motherCell_burst.parameterize('prodsat_burst',[prodA_with_bursting,kcatA,burstSize])
-motherCell_burst.equilibrate(nCycles_equilibrate)
-
-# Run simulation 
-motherCell_burst.run(nCells)
-
-# Save mother cell state 
-divStates_burst = motherCell_burst.getMotherStates()
-
-
-# Initialize molecules arrays 
-molecules_no_burst = np.zeros([3,nCells,6,int(nCycles*Tcc/10+1)])
-molecules_burst = np.zeros_like(molecules_no_burst)
-
-for i in range(nCells):
-
-    print(f"simulating cell pair {i}")
-
-    sis1state = rng.binomial(divStates_no_burst[:,i].astype('int'),0.5)
-    sis2state = (divStates_no_burst[:,i] - sis1state).astype('int')
-    rnd1state = rng.binomial(divStates_no_burst[:,rng.integers(0,nCells)].astype('int'),0.5)
-    
-    sis1 = mf.Cell(Tcc,0)
-    sis1.inherit(motherCell_no_burst,sis1state)
-    sis1.run(nCycles)
-    molecules_no_burst[0,i] = sis1.molecules
-
-    sis2 = mf.Cell(Tcc,0)
-    sis2.inherit(motherCell_no_burst,sis2state)
-    sis2.run(nCycles)
-    molecules_no_burst[1,i] = sis2.molecules
-
-    rnd1 = mf.Cell(Tcc,0)
-    rnd1.inherit(motherCell_no_burst,rnd1state)
-    rnd1.run(nCycles)
-    molecules_no_burst[2,i] = rnd1.molecules
-
-    # ================== Bursting Pairs =================================
-    sis1state = rng.binomial(divStates_burst[:,i].astype('int'),0.5)
-    sis2state = (divStates_burst[:,i] - sis1state).astype('int')
-    rnd1state = rng.binomial(divStates_burst[:,rng.integers(0,nCells)].astype('int'),0.5)
-    
-    sis1 = mf.Cell(Tcc,0)
-    sis1.inherit(motherCell_burst,sis1state)
-    sis1.run(nCycles)
-    molecules_burst[0,i] = sis1.molecules
-
-    sis2 = mf.Cell(Tcc,0)
-    sis2.inherit(motherCell_burst,sis2state)
-    sis2.run(nCycles)
-    molecules_burst[1,i] = sis2.molecules
-
-    rnd1 = mf.Cell(Tcc,0)
-    rnd1.inherit(motherCell_burst,rnd1state)
-    rnd1.run(nCycles)
-    molecules_burst[2,i] = rnd1.molecules
-
-# compute variance of pairwise differences 
-vardsis_no_burst = np.var(molecules_no_burst[0] - molecules_no_burst[1],axis=0)
-vardrnd_no_burst = np.var(molecules_no_burst[0] - molecules_no_burst[2],axis=0)
-normvar_no_burst = 1-vardsis_no_burst[0:2]/vardrnd_no_burst[0:2]
-
-vardsis_burst = np.var(molecules_burst[0] - molecules_burst[1],axis=0)
-vardrnd_burst = np.var(molecules_burst[0] - molecules_burst[2],axis=0)
-normvar_burst = 1-vardsis_burst[0:2]/vardrnd_burst[0:2]
-
-with open(PROJECT_DIR / 'satprod_burst_time/satprod_burst_time.pickle','wb') as f:
-    pickle.dump([vardsis_no_burst,vardrnd_no_burst,normvar_no_burst,vardsis_burst,vardrnd_burst,normvar_burst],f,pickle.HIGHEST_PROTOCOL)
-    
+# Save results 
+exp_dir = save_experiment(
+    experiment_name=metadata['experiment_name'],
+    data=results,
+    metadata=metadata,
+    base_dir=PROJECT_DIR / metadata['experiment_directory']
+)
+print(f"Experiment saved to {exp_dir}")

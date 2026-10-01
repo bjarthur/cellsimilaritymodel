@@ -70,7 +70,9 @@ def plot_normvar_comparison(normvar_no_burst,normvar_burst):
 
 
 if __name__=='__main__':
-    with open(PROJECT_DIR / 'satprod_burst_time/satprod_burst_time.pickle','rb') as f:
-        vardsis_no_burst,vardrnd_no_burst,normvar_no_burst,vardsis_burst,vardrnd_burst,normvar_burst = pickle.load(f)
+    with open(PROJECT_DIR / 'satprod/satprod_burst_time/satprod_burst_time.pickle','rb') as f:
+        results = pickle.load(f)
+    vardsis_no_burst, vardrnd_no_burst, normvar_no_burst = (results['no_burst'][k] for k in ('vardsis', 'vardrnd', 'normvar'))
+    vardsis_burst, vardrnd_burst, normvar_burst = (results['burst'][k] for k in ('vardsis', 'vardrnd', 'normvar'))
     
     plot_normvar_comparison(normvar_no_burst,normvar_burst)
