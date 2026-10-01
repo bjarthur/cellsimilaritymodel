@@ -50,8 +50,8 @@ def _simulate_single_pprodB(task_args):
     means = np.mean(molecules, axis=1)
     variances = np.var(molecules, axis=1)
 
-    # calculate order at each time step 
-    order = calcOrder(molecules[1], meta['kcatA'], meta['Km'], molecules[0])
+    # reaction order with respect to the reactant B' (molecule 0) at each time step, given the enzyme A (molecule 1) 
+    order = calcOrder(molecules[0], meta['kcatA'], meta['Km'], molecules[1])
 
     return {
         'means': means,
