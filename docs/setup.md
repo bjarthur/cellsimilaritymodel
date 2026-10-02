@@ -65,11 +65,22 @@ This should print the data directory you configured. If it fails with a `TypeErr
 ## Running the Code
 
 ### Simulations
-Each experiment is one script under `src/las_model/simulations/figure_XX/`, named after the figure it feeds. Its parameters are the `metadata` dictionary at the top of the script, which is also saved alongside the results. Run a script directly, for example:
+Each experiment is one script under `src/las_model/simulations/figure_XX/`, named after the figure it feeds. Its parameters are the `metadata` dictionary at the top of the script, which is also saved alongside the results. A script can be run directly:
 ```bash
 python src/las_model/simulations/figure_02/satprod_PprodAsweep.py
 ```
-Parameter sweeps run their points in parallel across all CPU cores. A few supplementary figures reuse another figure's simulation; their folders hold a stub or README pointing at the script to run.
+`src/las_model/simulations/run_simulations.py` runs them in bulk, each in its own process and in dependency order:
+```bash
+python src/las_model/simulations/run_simulations.py --dry-run                 # list what a full run would do
+python src/las_model/simulations/run_simulations.py                           # run every folder
+python src/las_model/simulations/run_simulations.py figure_02 figure_S10      # whole folders
+python src/las_model/simulations/run_simulations.py figure_06/cascade_time.py # single scripts, by path or bare name
+python src/las_model/simulations/run_simulations.py --root-dir /other/data --log logs
+python src/las_model/simulations/run_simulations.py --help
+```
+`--root-dir` writes the data somewhere other than `ROOT_DIR`; `--log` keeps each script's output in a file. Failing scripts are reported at the end and the rest still run, unless `--stop-on-error` is given. A full run takes many hours, dominated by the spatial grid simulations and the large parameter sweeps.
+
+Parameter sweeps run their points in parallel across all CPU cores, so the driver runs scripts one at a time. A few supplementary figures reuse another figure's simulation; their folders hold a stub or README pointing at the script to run.
 
 ### Figures
 `src/las_model/figures/plot_figures.py` draws the main and supplementary figures. Without arguments it opens each figure in a window; with `--save` it writes them to disk instead:
@@ -80,8 +91,6 @@ python src/las_model/figures/plot_figures.py --save figs --format pdf --dpi 300
 python src/las_model/figures/plot_figures.py --help
 ```
 Each figure is a function, `figure_01` ... `figure_S21`, so in Spyder or VS Code you can run the file to define them and then call one, e.g. `figure_02()`, from the console. A figure whose data has not been generated yet is reported as failed and the others still run.
-
-Figures S22 to S24 have their own small plotting scripts next to their simulations, `plot_figure_s22.py`, `plot_figure_s23.py` and `plot_figure_s24.py`.
 
 ### Roboto Font (optional)
 The figure script labels its panels with the Roboto font. If Roboto is not installed, matplotlib falls back to DejaVu Sans and prints a warning for every label:

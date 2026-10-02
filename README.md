@@ -5,7 +5,7 @@ Cells exhibit a mysterious form of selective heritable short-term memory, influe
 
 ## Repository Structure
 - `docs/` - Installation and usage instructions (`setup.md`)
-- `src/las_model/simulations/figure_XX/` - One script per experiment, grouped by the figure it feeds
+- `src/las_model/simulations/figure_XX/` - One script per experiment, grouped by the figure it feeds; `run_simulations.py` runs them in bulk
 - `src/las_model/figures/plot_figures.py` - Draws the main and supplementary figures (`--help` for options)
 - `src/las_model/utils/` - Shared code: the cell simulation engine, analysis helpers, experiment saving and configuration
 
