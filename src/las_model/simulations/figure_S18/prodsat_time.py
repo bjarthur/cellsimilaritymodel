@@ -1,11 +1,11 @@
-﻿#TODO: Run simulation 
+#TODO: Run simulation 
 
 # Saturated Production Time Run
 from datetime import datetime 
 import numpy as np
 from las_model.utils import motiffunc as mf
 from las_model.utils.config import PROJECT_DIR
-from las_model.utils.analyze import calculate_offspring_similarity_time 
+from las_model.utils.analyze import simulate_offspring_time, calculate_offspring_differences, calculate_offspring_correlation_time
 from las_model.utils.output import save_experiment 
 
 # Experiment metadata 
@@ -33,20 +33,20 @@ motherCell.parameterize(metadata['circuit'],[metadata['PprodA'],metadata['kcatA'
 motherCell.equilibrate(metadata['nCells_equilibrium'])
 motherCell.run(metadata['nCells'])
 
-# Calculate offspring similarity 
-dsis, drnd, vardsis, vardrnd, normvar = calculate_offspring_similarity_time(motherCell,metadata,rng)
+# Simulate offspring, then pairwise differences and correlations over time 
+sis1, sis2, rnd1 = simulate_offspring_time(motherCell,metadata,rng)
+dsis, drnd, vardsis, vardrnd, normvar = calculate_offspring_differences(sis1, sis2, rnd1)
+rsis, rrnd = calculate_offspring_correlation_time(sis1, sis2, rnd1)
 
-# append results 
 results = {
     'dsis': dsis,
     'drnd': drnd,
     'vardsis': vardsis,
     'vardrnd': vardrnd,
-    'normvar': normvar
+    'normvar': normvar,
+    'rsis': rsis,
+    'rrnd': rrnd,
 }
-
-# Stack results 
-results = {k: np.stack(v,axis=0) for k, v in results.items()}
 
 # Save results 
 exp_dir = save_experiment(
@@ -55,4 +55,4 @@ exp_dir = save_experiment(
     metadata=metadata,
     base_dir=PROJECT_DIR / metadata['experiment_directory']
 )
-print(f"Experiment saved to f{exp_dir}")
+print(f"Experiment saved to {exp_dir}")

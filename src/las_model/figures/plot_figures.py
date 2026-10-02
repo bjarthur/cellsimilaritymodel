@@ -2434,10 +2434,15 @@ def figure_S18():
 
     prodonly = img.imread(PROJECT_DIR / 'graphics/ngigraphic50.png')
 
-    with open(PROJECT_DIR/'correlationcoef/samplerun.pickle','rb') as f:
-       dM_rnd,dM_sis,dA_rnd,dA_sis,rM_sis,rM_rnd,rA_sis,rA_rnd = pickle.load(f)
+    # molecule 0 is the enzyme A, 1 the product B; differences are (cells, times), correlations (times,)
+    with open(PROJECT_DIR / 'satprod/time/satprod_time/satprod_time.pickle','rb') as f:
+        satprod_time_results = pickle.load(f)
+    dA_sis, dB_sis = satprod_time_results['dsis'][0], satprod_time_results['dsis'][1]
+    dA_rnd, dB_rnd = satprod_time_results['drnd'][0], satprod_time_results['drnd'][1]
+    rA_sis, rB_sis = satprod_time_results['rsis'][0], satprod_time_results['rsis'][1]
+    rA_rnd, rB_rnd = satprod_time_results['rrnd'][0], satprod_time_results['rrnd'][1]
 
-    times = np.linspace(0,10,10000)
+    times = np.linspace(0,10,dA_sis.shape[1])
 
     # Figure S18 (Correlation Coefficient): Plot
 
@@ -2451,8 +2456,8 @@ def figure_S18():
 
     f.text(0.15,0.92,'B',fontsize=letterLabelSize,fontname='roboto')
     ax = f.add_subplot(gs[0:1,1:2])
-    ax.plot(times,np.var(dM_rnd,axis=0),color='gray',linewidth=2,label='random')
-    ax.plot(times,np.var(dM_sis,axis=0),color='r',linewidth=2,label='related')
+    ax.plot(times,np.var(dA_rnd,axis=0),color='gray',linewidth=2,label='random')
+    ax.plot(times,np.var(dA_sis,axis=0),color='r',linewidth=2,label='related')
     ax.legend(frameon=0,fontsize=18,loc='upper left',bbox_to_anchor=[.3,.1,1,1])
     ax.set_xticks(np.linspace(0,10,6))
     ax.set_xticks(np.linspace(0,10,11),[],minor=1)
@@ -2471,8 +2476,8 @@ def figure_S18():
 
     f.text(0.425,0.92,'D',fontsize=letterLabelSize,fontname='roboto')
     ax = f.add_subplot(gs[0:1,2:3])
-    ax.plot(times,np.var(dA_rnd,axis=0),color=randomColor,linewidth=2,label='random')
-    ax.plot(times,np.var(dA_sis,axis=0),color=signalColor,linewidth=2,label='related')
+    ax.plot(times,np.var(dB_rnd,axis=0),color=randomColor,linewidth=2,label='random')
+    ax.plot(times,np.var(dB_sis,axis=0),color=signalColor,linewidth=2,label='related')
     ax.legend(frameon=0,fontsize=18)
     ax.set_xticks(np.linspace(0,10,6))
     ax.set_xticks(np.linspace(0,10,11),[],minor=1)
@@ -2492,8 +2497,8 @@ def figure_S18():
     f.text(0.72,0.92,'F',fontsize=letterLabelSize,fontname='roboto')
     ax = f.add_subplot(gs[0:1,3:4])
     ax.hlines(0,0,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth)
-    ax.plot(times,1-np.var(dM_sis,axis=0)/np.var(dM_rnd,axis=0),color=enzymeColor,linewidth=2,label='A')
-    ax.plot(times,1-np.var(dA_sis,axis=0)/np.var(dA_rnd,axis=0),color=signalColor,linewidth=2,label='B')
+    ax.plot(times,1-np.var(dA_sis,axis=0)/np.var(dA_rnd,axis=0),color=enzymeColor,linewidth=2,label='A')
+    ax.plot(times,1-np.var(dB_sis,axis=0)/np.var(dB_rnd,axis=0),color=signalColor,linewidth=2,label='B')
     ax.legend(frameon=0,fontsize=18)
     ax.set_xlim([0,10])
     ax.set_ylim([-.2,1])
@@ -2512,8 +2517,8 @@ def figure_S18():
     f.text(0.15,0.45,'C',fontsize=letterLabelSize,fontname='roboto')
     ax = f.add_subplot(gs[1:2,1:2])
     ax.hlines(0,0,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth)
-    ax.plot(times,rM_rnd,color=randomColor,linewidth=2,label='random')
-    ax.plot(times,rM_sis,color=enzymeColor,linewidth=2,label='related')
+    ax.plot(times,rA_rnd,color=randomColor,linewidth=2,label='random')
+    ax.plot(times,rA_sis,color=enzymeColor,linewidth=2,label='related')
     ax.legend(frameon=0,fontsize=18)
     ax.set_xlim([0,10])
     ax.set_ylim([-.2,1])
@@ -2533,8 +2538,8 @@ def figure_S18():
     f.text(0.425,0.45,'E',fontsize=letterLabelSize,fontname='roboto')
     ax = f.add_subplot(gs[1:2,2:3])
     ax.hlines(0,0,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth)
-    ax.plot(times,rA_rnd,color=randomColor,linewidth=2,label='random')
-    ax.plot(times,rA_sis,color=signalColor,linewidth=2,label='related')
+    ax.plot(times,rB_rnd,color=randomColor,linewidth=2,label='random')
+    ax.plot(times,rB_sis,color=signalColor,linewidth=2,label='related')
     ax.legend(frameon=0,fontsize=18)
     ax.set_xlim([0,10])
     ax.set_ylim([-.2,1])
@@ -2554,8 +2559,8 @@ def figure_S18():
     f.text(0.72,0.45,'G',fontsize=letterLabelSize,fontname='roboto')
     ax = f.add_subplot(gs[1:2,3:4])
     ax.hlines(0,0,2*10**5,color='k',linestyle='dashed',linewidth=plotWidth)
-    ax.plot(times,rM_sis,color=enzymeColor,linewidth=2,label='A (related)')
-    ax.plot(times,rA_sis,color=signalColor,linewidth=2,label='B (related)')
+    ax.plot(times,rA_sis,color=enzymeColor,linewidth=2,label='A (related)')
+    ax.plot(times,rB_sis,color=signalColor,linewidth=2,label='B (related)')
     ax.legend(frameon=0,fontsize=18)
     ax.set_xlim([0,10])
     ax.set_ylim([-.2,1])
