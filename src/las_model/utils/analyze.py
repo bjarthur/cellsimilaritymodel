@@ -45,7 +45,13 @@ def calculate_division_differences(divStates, rng):
 
     return dsis, drnd, vardsis, vardrnd, normvar
 
-def calculate_offspring_similarity_time(motherCell,metadata,rng):
+def simulate_offspring_time(motherCell, metadata, rng):
+    """
+    Divide every mother cell into two sisters, pair the first sister with a daughter of a
+    random other mother, and run all three offspring for metadata['nCycles'] cycles.
+
+    Returns the molecule trajectories sis1, sis2, rnd1, each of shape (nVars, nCells, nTimes).
+    """
     # Get division states and create offspring cells 
     divStates = (motherCell.getMotherStates()).astype('int')
 
@@ -85,19 +91,46 @@ def calculate_offspring_similarity_time(motherCell,metadata,rng):
         molcules['sis2'].append(molecules_sis2)
         molcules['rnd1'].append(molecules_rnd1)
 
-    # Stack molecule lists and compute pairwise differences for this kcat 
+    # Stack molecule lists 
     sis1stack = np.stack(molcules['sis1'],axis=1)
     sis2stack = np.stack(molcules['sis2'],axis=1)
     rnd1stack = np.stack(molcules['rnd1'],axis=1)
 
-    dsis = sis1stack - sis2stack
-    drnd = sis1stack - rnd1stack
+    return sis1stack, sis2stack, rnd1stack
 
-    vardsis = np.var(dsis,axis=1)
-    vardrnd = np.var(drnd,axis=1)
-    normvar = 1-vardsis/vardrnd
+
+def calculate_offspring_differences(sis1, sis2, rnd1):
+    """
+    Pairwise differences between the first sister and its sister (dsis) and between the
+    first sister and a random cell (drnd), their variances across cells at each time point,
+    and the normalized variance 1 - vardsis / vardrnd.
+    """
+    dsis = sis1 - sis2
+    drnd = sis1 - rnd1
+
+    vardsis = np.var(dsis, axis=1)
+    vardrnd = np.var(drnd, axis=1)
+    normvar = 1 - vardsis / vardrnd
 
     return dsis, drnd, vardsis, vardrnd, normvar
+
+
+def calculate_offspring_correlation_time(sis1, sis2, rnd1):
+    """
+    Pearson correlation across cells, at each time point, between the first sister and its
+    sister (rsis) and between the first sister and a random cell (rrnd). Shapes (nVars, nTimes).
+    """
+    def corr(x, y):
+        x = x - x.mean(axis=1, keepdims=True)
+        y = y - y.mean(axis=1, keepdims=True)
+        return (x * y).sum(axis=1) / np.sqrt((x * x).sum(axis=1) * (y * y).sum(axis=1))
+
+    return corr(sis1, sis2), corr(sis1, rnd1)
+
+
+def calculate_offspring_similarity_time(motherCell,metadata,rng):
+    sis1, sis2, rnd1 = simulate_offspring_time(motherCell, metadata, rng)
+    return calculate_offspring_differences(sis1, sis2, rnd1)
 
 def calcOrder(B,kcat,Km,A):
     """
