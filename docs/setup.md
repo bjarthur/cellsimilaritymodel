@@ -28,17 +28,14 @@ pip install uv
 ```bash
 uv sync
 ```
-This creates a virtual environment in `.venv` with Python 3.13 (downloading it if necessary), installs the pinned dependencies from `uv.lock`, and installs the `las_model` package itself in editable mode, so `import las_model` works from anywhere once the environment is active.
+This creates a virtual environment in `.venv` with Python 3.13 (downloading it if necessary), installs the pinned dependencies from `uv.lock`, and installs the `las_model` package itself in editable mode, so `import las_model` works inside that environment.
 
-Activate the environment before running anything:
+There is no need to activate the environment: prefix every command with `uv run`, which runs it inside `.venv` (and creates or refreshes the environment first if `pyproject.toml` or `uv.lock` changed):
 ```bash
-# macOS/Linux
-source .venv/bin/activate
-# Windows
-.venv\Scripts\activate
+uv run python --version
 ```
 
-If you prefer another environment manager (for example conda), install the dependencies listed in `pyproject.toml` and point Python at the sources with `PYTHONPATH=./src` when running the scripts below.
+If you prefer another environment manager (for example conda), install the dependencies listed in `pyproject.toml`, drop the `uv run` prefix from the commands below, and point Python at the sources with `PYTHONPATH=./src`.
 
 ### 4. Point the Code at Your Data Directory
 All simulation outputs and figure inputs live outside the repository, in a directory the code calls `PROJECT_DIR`. It is read from the `ROOT_DIR` environment variable by `src/las_model/utils/config.py`, which also loads a `.env` file from the repository root if one exists (`.env` is git-ignored). Either create that file once:
@@ -47,7 +44,7 @@ echo "ROOT_DIR=/path/to/your/data/directory" > .env
 ```
 or set the variable for each command:
 ```bash
-ROOT_DIR=/path/to/your/data/directory python src/las_model/figures/plot_figures.py
+ROOT_DIR=/path/to/your/data/directory uv run src/las_model/figures/plot_figures.py
 ```
 
 The directory must contain a `graphics/` folder with the schematic PNGs that the figures place next to the plots. Simulation outputs are written beneath it by `las_model.utils.output.save_experiment`, one folder per experiment:
@@ -58,7 +55,7 @@ The directory must contain a `graphics/` folder with the schematic PNGs that the
 
 ### 5. Verify the Installation
 ```bash
-python -c "from las_model.utils.config import PROJECT_DIR; print(f'Project directory: {PROJECT_DIR}')"
+uv run python -c "from las_model.utils.config import PROJECT_DIR; print(f'Project directory: {PROJECT_DIR}')"
 ```
 This should print the data directory you configured. If it fails with a `TypeError` mentioning `NoneType`, `ROOT_DIR` is not set.
 
@@ -67,16 +64,16 @@ This should print the data directory you configured. If it fails with a `TypeErr
 ### Simulations
 Each experiment is one script under `src/las_model/simulations/figure_XX/`, named after the figure it feeds. Its parameters are the `metadata` dictionary at the top of the script, which is also saved alongside the results. A script can be run directly:
 ```bash
-python src/las_model/simulations/figure_02/satprod_PprodAsweep.py
+uv run src/las_model/simulations/figure_02/satprod_PprodAsweep.py
 ```
 `src/las_model/simulations/run_simulations.py` runs them in bulk, each in its own process and in dependency order:
 ```bash
-python src/las_model/simulations/run_simulations.py --dry-run                 # list what a full run would do
-python src/las_model/simulations/run_simulations.py                           # run every folder
-python src/las_model/simulations/run_simulations.py figure_02 figure_S10      # whole folders
-python src/las_model/simulations/run_simulations.py figure_06/cascade_time.py # single scripts, by path or bare name
-python src/las_model/simulations/run_simulations.py --root-dir /other/data --log logs
-python src/las_model/simulations/run_simulations.py --help
+uv run src/las_model/simulations/run_simulations.py --dry-run                 # list what a full run would do
+uv run src/las_model/simulations/run_simulations.py                           # run every folder
+uv run src/las_model/simulations/run_simulations.py figure_02 figure_S10      # whole folders
+uv run src/las_model/simulations/run_simulations.py figure_06/cascade_time.py # single scripts, by path or bare name
+uv run src/las_model/simulations/run_simulations.py --root-dir /other/data --log logs
+uv run src/las_model/simulations/run_simulations.py --help
 ```
 `--root-dir` writes the data somewhere other than `ROOT_DIR`; `--log` keeps each script's output in a file. `--progress` draws one progress bar per script on the terminal, and combined with `--log` sends the scripts' own output to the log only, so the terminal shows just the bars. Failing scripts are reported at the end and the rest still run, unless `--stop-on-error` is given. The parameter sweeps show the same progress bars when run by hand; set `TQDM_DISABLE=1` to turn them off. A full run takes many hours, dominated by the spatial grid simulations and the large parameter sweeps.
 
@@ -85,12 +82,12 @@ Parameter sweeps run their points in parallel across all CPU cores, so the drive
 ### Figures
 `src/las_model/figures/plot_figures.py` draws the main and supplementary figures. Without arguments it opens each figure in a window; with `--save` it writes them to disk instead:
 ```bash
-python src/las_model/figures/plot_figures.py                          # show every figure
-python src/las_model/figures/plot_figures.py figure_02 figure_S04     # just these
-python src/las_model/figures/plot_figures.py --save figs --format pdf --dpi 300
-python src/las_model/figures/plot_figures.py --help
+uv run src/las_model/figures/plot_figures.py                          # show every figure
+uv run src/las_model/figures/plot_figures.py figure_02 figure_S04     # just these
+uv run src/las_model/figures/plot_figures.py --save figs --format pdf --dpi 300
+uv run src/las_model/figures/plot_figures.py --help
 ```
-Each figure is a function, `figure_01` ... `figure_S21`, so in Spyder or VS Code you can run the file to define them and then call one, e.g. `figure_02()`, from the console. A figure whose data has not been generated yet is reported as failed and the others still run.
+Each figure is a function, `figure_01` ... `figure_S21`, so in Spyder or VS Code (with the interpreter set to `.venv/bin/python`, or `.venv\Scripts\python.exe` on Windows) you can run the file to define them and then call one, e.g. `figure_02()`, from the console. A figure whose data has not been generated yet is reported as failed and the others still run.
 
 ### Roboto Font (optional)
 The figure script labels its panels with the Roboto font. If Roboto is not installed, matplotlib falls back to DejaVu Sans and prints a warning for every label:
@@ -113,6 +110,6 @@ The figures still render; only the panel letters look different. To install the 
    ```
 4. Verify that matplotlib can see the font:
    ```bash
-   python -c "from matplotlib import font_manager; print(sorted({f.name for f in font_manager.fontManager.ttflist if 'Roboto' in f.name}))"
+   uv run python -c "from matplotlib import font_manager; print(sorted({f.name for f in font_manager.fontManager.ttflist if 'Roboto' in f.name}))"
    ```
    This should print a list containing `'Roboto'`.
