@@ -11,12 +11,18 @@ Cells exhibit a mysterious form of selective heritable short-term memory, influe
 
 ## Requirements
 - Python 3.13 or newer
-- The Python packages pinned in `pyproject.toml` and `uv.lock` (numpy, scipy, matplotlib, numba, tqdm, opencv-python, cmapy, python-dotenv), installed with `uv sync`
+- The Python packages pinned in `pyproject.toml` and `uv.lock` (numpy, scipy, matplotlib, numba, tqdm, opencv-python, cmapy, python-dotenv), installed with `uv sync` and used through `uv run`
 - A data directory, pointed to by the `ROOT_DIR` environment variable, holding the simulation outputs and the figure schematics
 - Roboto font (optional, used for the figure panel labels; see `docs/setup.md`)
 
 ## Installation and Usage
-See `docs/setup.md` for installing the environment, configuring the data directory, running the simulations and plotting the figures.
+See `docs/setup.md` for installing the environment, configuring the data directory, running the simulations and plotting the figures. In short:
+```bash
+uv sync
+echo "ROOT_DIR=/path/to/your/data/directory" > .env
+uv run src/las_model/simulations/run_simulations.py --dry-run   # list the simulations
+uv run src/las_model/figures/plot_figures.py --save figs        # draw the figures
+```
 
 ## Contact
 Contact Allyson Sgro at sgroa@janelia.hhmi.org. 
