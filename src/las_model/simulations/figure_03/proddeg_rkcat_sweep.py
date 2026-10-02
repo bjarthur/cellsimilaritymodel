@@ -14,7 +14,7 @@ metadata = {
     'experiment_directory': 'prodanddeg',
     'created': datetime.now().isoformat(),
     'seed': 1000,
-    'nCells': 100,
+    'nCells': 1000,
     'nCells_equilibrium': 10,
     'nCycles': 10,
     'Tcc': 1000,
