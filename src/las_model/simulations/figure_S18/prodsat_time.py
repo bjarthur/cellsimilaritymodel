@@ -20,8 +20,8 @@ metadata = {
     'Tcc': 1000,
     'varTcc': 0,
     'circuit': 'prodsat',
-    'PprodA': 10**-1,
-    'kcatA': 10**-1
+    'PprodA': 10**-2,
+    'kcatA': 10**-2
 }
 
 # Pin random seed 
