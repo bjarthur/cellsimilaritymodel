@@ -1,13 +1,11 @@
 # Production and Degradation: Rkcat sweep 
-import os
-import multiprocessing as mp
-from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime 
 import numpy as np
 from las_model.utils import motiffunc as mf
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calculate_offspring_similarity_time
 from las_model.utils.output import save_experiment 
+from las_model.utils.parallel import run_pool
 
 # Experiment metadata
 metadata = {
@@ -73,12 +71,7 @@ if __name__ == '__main__':
         for i in range(len(metadata['kcatAs']))
     ]
 
-    num_workers = min(os.cpu_count() or 4, len(tasks))
-    print(f"Running sweep across {len(tasks)} conditions using {num_workers} parallel workers...")
-
-    ctx = mp.get_context('fork')
-    with ProcessPoolExecutor(max_workers=num_workers, mp_context=ctx) as executor:
-        sweep_results = list(executor.map(_simulate_single_kcat, tasks))
+    sweep_results = run_pool(_simulate_single_kcat, tasks, desc=metadata['experiment_name'])
 
     results = {
         k: np.stack([res[k] for res in sweep_results], axis=0)

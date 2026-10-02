@@ -75,25 +75,51 @@ def resolve_targets(targets):
     return list(dict.fromkeys(scripts))
 
 
-def run_script(script, root_dir, log_dir):
-    """Run one script in a child process, streaming its output; returns (exit code, seconds)."""
+def display_name(script):
+    """A script's name relative to the simulations directory, or its path if it lies elsewhere."""
+    try:
+        return str(script.relative_to(SIMULATIONS_DIR))
+    except ValueError:
+        return str(script)
+
+
+def run_script(script, root_dir, log_dir, progress):
+    """Run one script in a child process; returns (exit code, seconds).
+
+    Output handling: by default the script's stdout and stderr stream to the terminal, and
+    with --log are also copied to a log file. With --progress the script's progress bars are
+    drawn on the terminal through an extra file descriptor (PROGRESS_FD, see
+    utils/parallel.py), so that with --log everything else can go to the log alone.
+    """
     env = dict(os.environ)
     if root_dir is not None:
         env['ROOT_DIR'] = str(root_dir)
     env['PYTHONPATH'] = str(SRC_DIR) + (os.pathsep + env['PYTHONPATH'] if env.get('PYTHONPATH') else '')
     env['PYTHONUNBUFFERED'] = '1'
     cmd = [sys.executable, str(script)]
+    pass_fds = ()
+    if progress and sys.platform != 'win32':
+        progress_fd = os.dup(sys.stderr.fileno())      # the child inherits this copy of the terminal
+        env['PROGRESS_FD'] = str(progress_fd)
+        pass_fds = (progress_fd,)
     t0 = time.time()
-    if log_dir is None:
-        code = subprocess.run(cmd, env=env, cwd=REPO_DIR).returncode
-    else:
-        log_path = log_dir / f'{script.parent.name}_{script.stem}.log'
-        with open(log_path, 'w') as log:
-            proc = subprocess.Popen(cmd, env=env, cwd=REPO_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            for line in proc.stdout:
-                sys.stdout.write(line)
-                log.write(line)
-            code = proc.wait()
+    try:
+        if log_dir is None:
+            code = subprocess.run(cmd, env=env, cwd=REPO_DIR, pass_fds=pass_fds).returncode
+        else:
+            log_path = log_dir / f'{script.parent.name}_{script.stem}.log'
+            with open(log_path, 'w') as log:
+                if progress:
+                    code = subprocess.run(cmd, env=env, cwd=REPO_DIR, stdout=log, stderr=subprocess.STDOUT, pass_fds=pass_fds).returncode
+                else:
+                    proc = subprocess.Popen(cmd, env=env, cwd=REPO_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                    for line in proc.stdout:
+                        sys.stdout.write(line)
+                        log.write(line)
+                    code = proc.wait()
+    finally:
+        for fd in pass_fds:
+            os.close(fd)
     return code, time.time() - t0
 
 
@@ -111,6 +137,7 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='list what would run, in order, and exit')
     parser.add_argument('--stop-on-error', action='store_true', help='stop at the first failing script (default: continue and report)')
     parser.add_argument('--log', metavar='DIR', type=Path, help='also write each script\'s output to DIR/<folder>_<script>.log')
+    parser.add_argument('--progress', action='store_true', help='draw a progress bar per script on the terminal; with --log, the scripts\' own output then goes only to the log')
     args = parser.parse_args()
 
     scripts = resolve_targets(args.targets)
@@ -128,7 +155,7 @@ def main():
     print(f'data directory: {root_dir}')
     print(f'{len(scripts)} script(s):')
     for s in scripts:
-        print(f'  {s.relative_to(SIMULATIONS_DIR)}')
+        print(f'  {display_name(s)}')
     if args.dry_run:
         return
     if args.log:
@@ -136,9 +163,9 @@ def main():
 
     results = []
     for s in scripts:
-        name = str(s.relative_to(SIMULATIONS_DIR))
+        name = display_name(s)
         print(f'\n===== {name} =====', flush=True)
-        code, seconds = run_script(s, args.root_dir and root_dir, args.log)
+        code, seconds = run_script(s, args.root_dir and root_dir, args.log, args.progress)
         results.append((name, code, seconds))
         if code != 0 and args.stop_on_error:
             break

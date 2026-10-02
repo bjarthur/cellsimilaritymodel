@@ -11,7 +11,7 @@ Cells exhibit a mysterious form of selective heritable short-term memory, influe
 
 ## Requirements
 - Python 3.13 or newer
-- The Python packages pinned in `pyproject.toml` and `uv.lock` (numpy, scipy, matplotlib, opencv-python, cmapy, python-dotenv), installed with `uv sync`
+- The Python packages pinned in `pyproject.toml` and `uv.lock` (numpy, scipy, matplotlib, numba, tqdm, opencv-python, cmapy, python-dotenv), installed with `uv sync`
 - A data directory, pointed to by the `ROOT_DIR` environment variable, holding the simulation outputs and the figure schematics
 - Roboto font (optional, used for the figure panel labels; see `docs/setup.md`)
 

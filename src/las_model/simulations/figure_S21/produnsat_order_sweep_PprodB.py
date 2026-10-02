@@ -1,15 +1,13 @@
 #TODO: run simulation 
 
 # Unsaturated Production: Order Analysis with varying PprodB 
-import os
-import multiprocessing as mp
-from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime 
 import numpy as np 
 from las_model.utils import motiffunc as mf
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.analyze import calcOrder, calculate_division_differences
 from las_model.utils.output import save_experiment 
+from las_model.utils.parallel import run_pool
 
 # Experiment metadata 
 metadata = {
@@ -74,12 +72,7 @@ if __name__ == '__main__':
         for idx, PprodB in enumerate(metadata['PprodBs'])
     ]
 
-    num_workers = min(os.cpu_count() or 4, len(tasks))
-    print(f"Running sweep across {len(tasks)} PprodB conditions using {num_workers} parallel workers...")
-
-    ctx = mp.get_context('fork')
-    with ProcessPoolExecutor(max_workers=num_workers, mp_context=ctx) as executor:
-        sweep_results = list(executor.map(_simulate_single_pprodB, tasks))
+    sweep_results = run_pool(_simulate_single_pprodB, tasks, desc=metadata['experiment_name'])
 
     # Stack results along axis 0
     results = {

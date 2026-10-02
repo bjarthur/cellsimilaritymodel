@@ -1,7 +1,6 @@
-import os
-from concurrent.futures import ProcessPoolExecutor
 import numpy as np 
 from las_model.utils import motiffunc as mf 
+from las_model.utils.parallel import run_pool
 
 def calculate_division_differences(divStates, rng):
     """
@@ -88,8 +87,6 @@ def simulate_offspring_time(motherCell, metadata, rng, num_workers=None):
     rnd1states = rng.binomial(divStates[:, partnerIdx], 0.5)
 
     n_cells = metadata['nCells']
-    if num_workers is None:
-        num_workers = min(os.cpu_count() or 4, n_cells)
 
     # Generate statistically independent seeds for each task
     seeds = rng.integers(0, 2**63 - 1, size=n_cells)
@@ -102,22 +99,10 @@ def simulate_offspring_time(motherCell, metadata, rng, num_workers=None):
     mol_sis1 = [None] * n_cells
     mol_sis2 = [None] * n_cells
     mol_rnd1 = [None] * n_cells
-
-    if num_workers == 1:
-        for task in tasks:
-            i, m_s1, m_s2, m_r1 = _simulate_cell_triplet(task)
-            mol_sis1[i] = m_s1
-            mol_sis2[i] = m_s2
-            mol_rnd1[i] = m_r1
-    else:
-        print(f"Simulating {n_cells} cells across {num_workers} parallel workers...")
-        import multiprocessing as mp
-        ctx = mp.get_context('fork')
-        with ProcessPoolExecutor(max_workers=num_workers, mp_context=ctx) as executor:
-            for i, m_s1, m_s2, m_r1 in executor.map(_simulate_cell_triplet, tasks):
-                mol_sis1[i] = m_s1
-                mol_sis2[i] = m_s2
-                mol_rnd1[i] = m_r1
+    for i, m_s1, m_s2, m_r1 in run_pool(_simulate_cell_triplet, tasks, desc='offspring cells', num_workers=num_workers):
+        mol_sis1[i] = m_s1
+        mol_sis2[i] = m_s2
+        mol_rnd1[i] = m_r1
 
     # Stack molecule lists 
     sis1stack = np.stack(mol_sis1, axis=1)
