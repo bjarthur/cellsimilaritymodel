@@ -12,6 +12,7 @@ dependencies = [
     "opencv-python==4.11.0.86",
     "python-dotenv>=1.2.3",
     "scipy==1.16.2",
+    "tqdm>=4.66",
 ]
 
 [build-system]

@@ -1,12 +1,10 @@
 # 3 Step Cascade Spatial Simulation: relatedness curves for different random seeds
-import os
-import multiprocessing as mp
-from concurrent.futures import ProcessPoolExecutor
 from datetime import datetime
 import numpy as np
 from las_model.utils import gridfunc as gf
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.output import save_experiment
+from las_model.utils.parallel import run_pool
 
 # Experiment metadata
 metadata = {
@@ -48,12 +46,7 @@ def _simulate_single_seed(task_args):
 if __name__ == '__main__':
     tasks = [(seed, metadata) for seed in metadata['seeds']]
 
-    num_workers = min(os.cpu_count() or 4, len(tasks))
-    print(f"Running {len(tasks)} seeded grids using {num_workers} parallel workers...")
-
-    ctx = mp.get_context('fork')
-    with ProcessPoolExecutor(max_workers=num_workers, mp_context=ctx) as executor:
-        relatedness = list(executor.map(_simulate_single_seed, tasks))
+    relatedness = run_pool(_simulate_single_seed, tasks, desc=metadata['experiment_name'])
 
     # Relatedness curves stay a list with one (cells, radii) array per seed: the number of 
     # cells alive at relatedness_t differs between runs, so they cannot be stacked 

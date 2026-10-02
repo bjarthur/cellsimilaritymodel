@@ -78,7 +78,7 @@ python src/las_model/simulations/run_simulations.py figure_06/cascade_time.py # 
 python src/las_model/simulations/run_simulations.py --root-dir /other/data --log logs
 python src/las_model/simulations/run_simulations.py --help
 ```
-`--root-dir` writes the data somewhere other than `ROOT_DIR`; `--log` keeps each script's output in a file. Failing scripts are reported at the end and the rest still run, unless `--stop-on-error` is given. A full run takes many hours, dominated by the spatial grid simulations and the large parameter sweeps.
+`--root-dir` writes the data somewhere other than `ROOT_DIR`; `--log` keeps each script's output in a file. `--progress` draws one progress bar per script on the terminal, and combined with `--log` sends the scripts' own output to the log only, so the terminal shows just the bars. Failing scripts are reported at the end and the rest still run, unless `--stop-on-error` is given. The parameter sweeps show the same progress bars when run by hand; set `TQDM_DISABLE=1` to turn them off. A full run takes many hours, dominated by the spatial grid simulations and the large parameter sweeps.
 
 Parameter sweeps run their points in parallel across all CPU cores, so the driver runs scripts one at a time. A few supplementary figures reuse another figure's simulation; their folders hold a stub or README pointing at the script to run.
 
