@@ -99,6 +99,53 @@ def simulate_offspring_time(motherCell, metadata, rng):
     return sis1stack, sis2stack, rnd1stack
 
 
+def simulate_offspring_scramble_time(motherCell, metadata, rng):
+    """
+    Like simulate_offspring_time, but each sister is also rerun as a scrambled copy in which
+    the molecules indexed by metadata['scrambled_molecules'] are instead inherited from a
+    random other mother (a different one per sister). The random cell rnd1 is shared between
+    the inherited and scrambled pairings.
+
+    Returns sis1, sis2, rnd1, sis1scr, sis2scr, each of shape (nVars, nCells, nTimes).
+    """
+    # Get division states and create offspring cells
+    divStates = (motherCell.getMotherStates()).astype('int')
+    scrambled = list(metadata['scrambled_molecules'])
+
+    sis1states = rng.binomial(divStates, 0.5)
+    sis2states = divStates - sis1states
+
+    partnerIdx = rng.integers(0, metadata['nCells'], size=metadata['nCells'])
+    rnd1states = rng.binomial(divStates[:, partnerIdx], 0.5)
+
+    # Redraw the scrambled molecules as daughters of each sister's own random other mother
+    sis1scrstates = sis1states.copy()
+    newMother1 = rng.integers(0, metadata['nCells'], size=metadata['nCells'])
+    sis1scrstates[scrambled] = rng.binomial(divStates[np.ix_(scrambled, newMother1)], 0.5)
+
+    sis2scrstates = sis2states.copy()
+    newMother2 = rng.integers(0, metadata['nCells'], size=metadata['nCells'])
+    sis2scrstates[scrambled] = rng.binomial(divStates[np.ix_(scrambled, newMother2)], 0.5)
+
+    allstates = [sis1states, sis2states, rnd1states, sis1scrstates, sis2scrstates]
+
+    # preallocate molecules lists
+    molecules = [[] for _ in allstates]
+
+    # Divide cells and run offspring
+    for i in range(metadata['nCells']):
+        print(f"Simulating cell {i+1}/{metadata['nCells']}")
+
+        for states, cell_molecules in zip(allstates, molecules):
+            cell = mf.Cell(metadata['Tcc'],metadata['varTcc'],rng)
+            cell.inherit(motherCell,states[:,i])
+            cell.run(metadata['nCycles'])
+            cell_molecules.append(cell.getMolecules())
+
+    # Stack molecule lists
+    return tuple(np.stack(cell_molecules,axis=1) for cell_molecules in molecules)
+
+
 def calculate_offspring_differences(sis1, sis2, rnd1):
     """
     Pairwise differences between the first sister and its sister (dsis) and between the
