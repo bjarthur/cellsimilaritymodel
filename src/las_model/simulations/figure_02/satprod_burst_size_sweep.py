@@ -4,6 +4,7 @@ import numpy as np
 from las_model.utils import motiffunc as mf
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.output import save_experiment
+from las_model.utils.parallel import run_pool
 from las_model.utils.analyze import calculate_division_differences
 
 # Experiment metadata
@@ -21,65 +22,58 @@ metadata = {
     'kcatA': 10**-2
 }
 
-# Set burst size array
-burstSizes = np.array(metadata['burstSizes'])
-kcatA = metadata['kcatA']
+def _simulate_single_burst(task_args):
+    """Worker task simulating one (prodA_std, burstSize) condition."""
+    prodA, burstSize, meta, seed = task_args
+    task_rng = np.random.default_rng(seed)
 
-# === Iterate over total A production rates, then burst sizes ====
-for exponent in metadata['prodA_std_exponents']:
+    print(f"Simulating burst size {burstSize} with prodA {prodA}")
 
-    # Pin random seed, anew per production rate so each matches a standalone run
-    rng = np.random.default_rng(seed=metadata['seed'])
+    motherCell = mf.Cell(meta['Tcc'],0,task_rng)
+    motherCell.parameterize(meta['circuit'],[prodA,meta['kcatA'],burstSize])
+    motherCell.equilibrate(meta['nCycles_equilibrium'])
+    motherCell.run(meta['nCells'])
 
-    prodA_std = 10**exponent
-    prodAs = prodA_std / burstSizes
+    molecules = motherCell.getMolecules()
+    divStates = motherCell.getMotherStates()
+    _, _, _, _, normvar = calculate_division_differences(divStates, task_rng)
 
-    # Initialize arrays to store simulation results
-    Aeqs = np.zeros([len(burstSizes)])
-    Beqs = np.zeros_like(Aeqs)
-    normvarAs = np.zeros_like(Aeqs)
-    normvarBs = np.zeros_like(Aeqs)
+    return np.mean(molecules[0]), np.mean(molecules[1]), normvar[0], normvar[1]
 
-    for i in range(len(burstSizes)):
+if __name__ == '__main__':
+    burstSizes = np.array(metadata['burstSizes'])
+    nBursts = len(burstSizes)
 
-        # Set burst size and PprodA value
-        burstSize = burstSizes[i]
-        prodA = prodAs[i]
+    # Generate statistically independent, deterministic seeds for each condition
+    master_rng = np.random.default_rng(seed=metadata['seed'])
+    seeds = master_rng.integers(0, 2**63 - 1, size=len(metadata['prodA_std_exponents']) * nBursts)
 
-        print(f"Simulating prodA_std 10**{exponent} with burst size {burstSize} and prodA {prodA}")
+    # Exponent outer, burst size inner, so the flat task order maps onto the loop below
+    tasks = [
+        (10**exponent / burstSize, burstSize, metadata, seeds[e * nBursts + i])
+        for e, exponent in enumerate(metadata['prodA_std_exponents'])
+        for i, burstSize in enumerate(burstSizes)
+    ]
 
-        motherCell = mf.Cell(metadata['Tcc'],0,rng)
-        motherCell.parameterize(metadata['circuit'],[prodA,kcatA,burstSize])
-        motherCell.equilibrate(metadata['nCycles_equilibrium'])
+    sweep_results = run_pool(_simulate_single_burst, tasks, desc=metadata['experiment_name'])
 
-        # Run simulation
-        motherCell.run(metadata['nCells'])
+    # Regroup the flat results per production rate and save each as its own experiment
+    for e, exponent in enumerate(metadata['prodA_std_exponents']):
+        prodA_std = 10**exponent
+        prodAs = prodA_std / burstSizes
 
-        # Get molecules
-        molecules = motherCell.getMolecules()
+        Aeqs, Beqs, normvarAs, normvarBs = (np.array(x) for x in zip(*sweep_results[e * nBursts:(e + 1) * nBursts]))
 
-        Aeqs[i] = np.mean(molecules[0])
-        Beqs[i] = np.mean(molecules[1])
+        run_metadata = {
+            **metadata,
+            'experiment_name': f"{metadata['experiment_name']}-{-exponent}",
+            'prodA_std': prodA_std,
+        }
 
-        divStates = motherCell.getMotherStates()
-        _, _, _, _, normvar = calculate_division_differences(divStates, rng)
-
-        normvarAs[i] = normvar[0]
-        normvarBs[i] = normvar[1]
-
-        print(f"normvarAs[i]: {normvarAs[i]}, normvarBs[i]: {normvarBs[i]}")
-
-    # Save this production rate's sweep as its own experiment
-    run_metadata = {
-        **metadata,
-        'experiment_name': f"{metadata['experiment_name']}-{-exponent}",
-        'prodA_std': prodA_std,
-    }
-
-    exp_dir = save_experiment(
-        experiment_name=run_metadata['experiment_name'],
-        data=[burstSizes, prodAs, Aeqs, Beqs, normvarAs, normvarBs],
-        metadata=run_metadata,
-        base_dir=PROJECT_DIR / metadata['experiment_directory']
-    )
-    print(f"Saved experiment to {exp_dir}")
+        exp_dir = save_experiment(
+            experiment_name=run_metadata['experiment_name'],
+            data=[burstSizes, prodAs, Aeqs, Beqs, normvarAs, normvarBs],
+            metadata=run_metadata,
+            base_dir=PROJECT_DIR / metadata['experiment_directory']
+        )
+        print(f"Saved experiment to {exp_dir}")
