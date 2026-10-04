@@ -4,6 +4,7 @@ import numpy as np
 from las_model.utils import motiffunc as mf
 from las_model.utils.config import PROJECT_DIR
 from las_model.utils.output import save_experiment
+from las_model.utils.analyze import calculate_division_differences
 
 # Experiment metadata
 metadata = {
@@ -61,19 +62,10 @@ for exponent in metadata['prodA_std_exponents']:
         Beqs[i] = np.mean(molecules[1])
 
         divStates = motherCell.getMotherStates()
+        _, _, _, _, normvar = calculate_division_differences(divStates, rng)
 
-        dsis = np.zeros([metadata['nCells'],6])
-        drnd = np.zeros([metadata['nCells'],6])
-
-        for k in range(metadata['nCells']):
-            cell1 = rng.binomial(divStates[:,k].astype('int'),0.5)
-            cell2 = rng.binomial(divStates[:,rng.integers(0,metadata['nCells'])].astype('int'),0.5)
-
-            dsis[k] = divStates[:,k] - 2*cell1
-            drnd[k] = cell1 - cell2
-
-        normvarAs[i] = 1-np.var(dsis[:,0],axis=0)/np.var(drnd[:,0],axis=0)
-        normvarBs[i] = 1-np.var(dsis[:,1],axis=0)/np.var(drnd[:,1],axis=0)
+        normvarAs[i] = normvar[0]
+        normvarBs[i] = normvar[1]
 
         print(f"normvarAs[i]: {normvarAs[i]}, normvarBs[i]: {normvarBs[i]}")
 
