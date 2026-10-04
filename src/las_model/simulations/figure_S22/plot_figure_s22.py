@@ -55,7 +55,7 @@ def plot_compare_normvar(inerhited_B,scrambled_B,inherited_A_B,scrambled_A_B):
     plt.ylim([-0.2,1])
     plt.xticks(np.linspace(0,1000,11),np.linspace(0,10,11).astype(int))
     plt.xlabel('Generations')
-    plt.ylabel('LAS A ($\Delta \hat{\sigma}^2_{\Delta [A]}$)')
+    plt.ylabel('LAS A ($\\Delta \\hat{\\sigma}^2_{\\Delta [A]}$)')
 
     plt.subplot(1,3,2)
     plt.hlines(0,0,1000,color='k',linestyle='dashed',zorder=0)
@@ -67,7 +67,7 @@ def plot_compare_normvar(inerhited_B,scrambled_B,inherited_A_B,scrambled_A_B):
     plt.ylim([-0.2,1])
     plt.xticks(np.linspace(0,1000,11),np.linspace(0,10,11).astype(int))
     plt.xlabel('Generations')
-    plt.ylabel('LAS B ($\Delta \hat{\sigma}^2_{\Delta [B]}$)')
+    plt.ylabel('LAS B ($\\Delta \\hat{\\sigma}^2_{\\Delta [B]}$)')
 
     plt.subplot(1,3,3)
     plt.hlines(0,0,1000,color='k',linestyle='dashed',zorder=0)
@@ -79,17 +79,20 @@ def plot_compare_normvar(inerhited_B,scrambled_B,inherited_A_B,scrambled_A_B):
     plt.ylim([-0.2,1])
     plt.xticks(np.linspace(0,1000,11),np.linspace(0,10,11).astype(int))
     plt.xlabel('Generations')
-    plt.ylabel('LAS C ($\Delta \hat{\sigma}^2_{\Delta [C]}$)')
+    plt.ylabel('LAS C ($\\Delta \\hat{\\sigma}^2_{\\Delta [C]}$)')
 
     plt.tight_layout()
     plt.show()
 
 if __name__=="__main__":
-    with open(PROJECT_DIR / 'cascade_scramble/cascade_scramble_B_only_plot.pickle','rb') as f:
-        drnd_inherited_B,dsis_inherited_B,drnd_scambled_B,dsis_scrambled_B,normvar_inherited_B,normvar_scrambled_B = pickle.load(f)
+    with open(PROJECT_DIR / 'cascade_scramble/cascade_scramble_B_only/cascade_scramble_B_only.pickle','rb') as f:
+        scramble_B = pickle.load(f)
 
-    with open(PROJECT_DIR / 'cascade_scramble/cascade_scramble_A_and_B_plot.pickle','rb') as f:
-        drnd_inherited_A_B,dsis_inherited_A_B,drnd_scambled_A_B,dsis_scrambled_A_B,normvar_inherited_A_B,normvar_scrambled_A_B = pickle.load(f)
+    with open(PROJECT_DIR / 'cascade_scramble/cascade_scramble_A_and_B/cascade_scramble_A_and_B.pickle','rb') as f:
+        scramble_A_B = pickle.load(f)
 
-    plot_compare_normvar(normvar_inherited_B,normvar_scrambled_B,normvar_inherited_A_B,normvar_scrambled_A_B)
-    # plot_vard_grid(drnd_inherited_B,dsis_inherited_B,drnd_scambled_B,dsis_scrambled_B,normvar_inherited_B,normvar_scrambled_B)
+    plot_compare_normvar(scramble_B['inherited']['normvar'],scramble_B['scrambled']['normvar'],
+                         scramble_A_B['inherited']['normvar'],scramble_A_B['scrambled']['normvar'])
+    # plot_vard_grid(scramble_B['inherited']['vardsis'],scramble_B['inherited']['vardrnd'],
+    #                scramble_B['scrambled']['vardsis'],scramble_B['scrambled']['vardrnd'],
+    #                scramble_B['inherited']['normvar'],scramble_B['scrambled']['normvar'])
